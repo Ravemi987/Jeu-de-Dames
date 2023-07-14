@@ -11,16 +11,18 @@ class Config:
     def __init__(self):
         pygame.font.init()
         self.themes, self.windows = [], []
+        self.buttons_list = []
         self._add_themes()
         self._add_windows()
         self.theme_index, self.window_index = 0, 0
         self.theme = self.themes[self.theme_index]
         self.window = self.windows[self.window_index]
-        self.font = pygame.font.SysFont("microsoftsansserif", self.window.font_size)
+        self.digital_font = pygame.font.Font("assets/digital-7.regular.ttf", self.window.digital_font_size)
+        self.text_font = pygame.font.Font("assets/recharge.rg-bold.otf", self.window.text_font_size)
         self.board_pos = (0, 0)
-        self.fps = 60
+        self.fps = 120
         self.transparency = 255
-        self.game_duration = 300
+        self.game_duration = 10
         self.bonus_time = 0
 
     def change_theme(self):
@@ -34,7 +36,8 @@ class Config:
         self.window_index += 1
         self.window_index %= len(self.windows)
         self.window = self.windows[self.window_index]
-        self.font = pygame.font.SysFont("microsoftsansserif", self.window.font_size)
+        self.digital_font = pygame.font.Font("assets/digital-7.regular.ttf", self.window.digital_font_size)
+        self.text_font = pygame.font.Font("assets/recharge.rg-bold.otf", self.window.text_font_size)
 
     def _add_themes(self):
         """ 
@@ -53,8 +56,8 @@ class Config:
 
     def _add_windows(self):
         """ Ajoute une résolution d'écran. """
-        windowed = Screen(1920, 1080, 850, 850, 30)
-        fullscreen = Screen(2560, 1440, 1100, 1100, 40)
+        windowed = Screen(1920, 1080, 850, 850, 40)
+        fullscreen = Screen(2560, 1440, 1100, 1100, 50)
 
         self.windows = [windowed, fullscreen]
 
@@ -81,3 +84,11 @@ class Config:
     def set_tansparency(self, transparency):
         """ Met à jour l'opacité. """
         self.transparency = transparency
+
+    def add_button(self, button):
+        """ Ajoute un bouton. """
+        self.buttons_list.append(button)
+
+    def get_buttons_list(self):
+        """ Renvoie la liste des boutons. """
+        return self.buttons_list

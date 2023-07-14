@@ -1,10 +1,9 @@
 import pygame
 from .board import Board
 from .dragger import Dragger
+from .button import Button
 from .constants import *
-import sys
-import math
-import time
+import sys, math, time
 
 
 class Game:
@@ -103,12 +102,16 @@ class Game:
             self.show_hover(self.board_window, theme)
             self.dragger.update_blit(self.board_window)
 
+        winner = self.winner()
+        if winner is not None:
+            self.show_end_screen(winner)
+
         self.show_fps(self.screen, tick)
         self.show_clock(self.screen)
 
         pygame.display.update()
     
-    def reset(self, board_config):
+    def reset(self, board_config=1):
         """ Réinitialise la partie. """
         self._init(self.game_config, board_config)
 
@@ -243,7 +246,7 @@ class Game:
             color = (217, 224, 16)
         else:
             color = (224, 73, 18)
-        text = self.game_config.font.render(str(framerate).split('.')[0], True, color)
+        text = self.game_config.digital_font.render(str(framerate).split('.')[0], True, color)
         text.set_alpha(self.game_config.transparency)
         window.blit(text, [10, 0])
 
@@ -254,14 +257,14 @@ class Game:
         board_origin = self.game_config.get_board_pos()
 
         # Coordonnées du coin en bas à droite du plateau
-        board_with, board_height = (board_origin[0] + self.game_config.window.board_width), (board_origin[1] + height_position)
-        clock_origin = board_with - 0.95 * 2 * square_size, board_height + decalage * clock_height // 2
+        board_width, board_height = (board_origin[0] + self.game_config.window.board_width), (board_origin[1] + height_position)
+        clock_origin = board_width - 0.95 * 2 * square_size, board_height + decalage * clock_height // 2
 
         # ========
 
         min, sec = int(remaining_time // 60), int(remaining_time % 60)
         time_text = "{:02d}:{:02d}".format(min, sec)
-        text_surface = self.game_config.font.render(time_text, True, text_color)
+        text_surface = self.game_config.digital_font.render(time_text, True, text_color)
         clock = pygame.Surface([clock_width, clock_height], pygame.SRCALPHA)
         pygame.draw.rect(clock, bg_color, (0, 0, clock_width, clock_height), border_radius=15)
 
@@ -295,12 +298,12 @@ class Game:
         board_origin = self.game_config.get_board_pos()
 
         # Coordonnées du coin en bas à droite du plateau
-        board_with, board_height = (board_origin[0] + self.game_config.window.board_width), (board_origin[1] + height_position)
-        clock_origin = board_with - 0.95 * 2 * square_size, board_height + decalage * clock_height // 2
+        board_width, board_height = (board_origin[0] + self.game_config.window.board_width), (board_origin[1] + height_position)
+        clock_origin = board_width - 0.95 * 2 * square_size, board_height + decalage * clock_height // 2
 
         min, sec = int(remaining_time // 60), int(remaining_time % 60)
         time_text = "{:02d}:{:02d}".format(min, sec)
-        text_surface = self.game_config.font.render(time_text, True, text_color)
+        text_surface = self.game_config.digital_font.render(time_text, True, text_color)
         clock = pygame.Surface([clock_width, clock_height], pygame.SRCALPHA)
         pygame.draw.rect(clock, bg_color, (0, 0, clock_width, clock_height), border_radius=15)
 
@@ -311,7 +314,7 @@ class Game:
 
         min, sec = int(remaining_time // 60), int(remaining_time % 60)
         time_text = "{:02d}:{:02d}".format(min, sec)
-        text_surface = self.game_config.font.render(time_text, True, text_color)
+        text_surface = self.game_config.digital_font.render(time_text, True, text_color)
         clock = pygame.Surface([clock_width, clock_height], pygame.SRCALPHA)
         pygame.draw.rect(clock, bg_color, (0, 0, clock_width, clock_height), border_radius=15)
 
@@ -323,35 +326,60 @@ class Game:
             if self.turn == 'white':
                 if self.player_side == 1:
                     self.draw_clock(screen, WHITE, BLACK, self.remaining_time, self.game_config.window.board_height, 1)
-                    self.pause_clock(screen, GREY2, GREY1, self.player2_remaining_time, 0, -3)
+                    self.pause_clock(screen, BLACK1, GREY2, self.player2_remaining_time, 0, -3)
                 else:
                     self.draw_clock(screen, WHITE, BLACK, self.remaining_time, 0, -3)
-                    self.pause_clock(screen, GREY2, GREY1, self.player2_remaining_time, self.game_config.window.board_height, 1)
+                    self.pause_clock(screen, BLACK1, GREY2, self.player2_remaining_time, self.game_config.window.board_height, 1)
             else:
                 if self.player_side == 2:
                     self.draw_clock(screen, BLACK, WHITE, self.remaining_time, self.game_config.window.board_height, 1)
-                    self.pause_clock(screen, GREY2, GREY1, self.player1_remaining_time, 0, -3)
+                    self.pause_clock(screen, WHITE1, GREY1, self.player1_remaining_time, 0, -3)
                 else:
                     self.draw_clock(screen, BLACK, WHITE, self.remaining_time, 0, -3)
-                    self.pause_clock(screen, GREY2, GREY1, self.player1_remaining_time, self.game_config.window.board_height, 1)
+                    self.pause_clock(screen, WHITE1, GREY1, self.player1_remaining_time, self.game_config.window.board_height, 1)
+
+    def show_end_screen(self, winner):
+        board_origin = self.game_config.get_board_pos()
+
+        end_screen_width, end_screen_height = self.game_config.window.board_width // 2,  self.game_config.window.board_height // 3
+        end_screen_center_x = board_origin[0] + (self.game_config.window.board_width - end_screen_width) // 2
+        end_screen_center_y = board_origin[1] + (self.game_config.window.board_height - end_screen_height) // 2
+
+        restart_button = Button(
+            name="restart_button",
+            screen=self.screen,
+            text="Rejouer",
+            bg_color=GREEN,
+            text_color=(255, 255, 255),
+            width=end_screen_width // 2,
+            height=end_screen_height // 3,
+            border_radius=15,
+            position= [end_screen_center_x + (end_screen_width - (end_screen_width // 2)) // 2, 
+                       end_screen_center_y + end_screen_height // 2],
+            command=self.reset,
+            font="assets/recharge.rg-bold.otf",
+            font_size=self.game_config.window.text_font_size
+        )
+        
+        if restart_button not in self.game_config.get_buttons_list():
+            self.game_config.add_button(restart_button)
+
+        end_screen = pygame.Surface([end_screen_width, end_screen_height], pygame.SRCALPHA)
+        pygame.draw.rect(end_screen, BG, (0, 0, end_screen_width, end_screen_height), border_radius=15)
+        screen_text_surface = self.game_config.text_font.render(f"Le joueur {winner} a gagné la partie !", True, (255, 255, 255))
+        end_screen.blit(screen_text_surface, [(end_screen_width - screen_text_surface.get_width()) // 2, end_screen_height // 4])
+        self.screen.blit(end_screen, [end_screen_center_x, end_screen_center_y])
+        restart_button.show()
 
     def winner(self):
         """ Renvoi le gagnant de la partie. """
         if self.board.white_pieces_left == 0 and self.board.black_pieces_left > 0 \
-                or self.player1_remaining_time == 0:
+                or self.remaining_time == 0 and self.turn == 'white':
             return 'noir'
         elif self.board.black_pieces_left == 0 and self.board.white_pieces_left > 0 \
-                or self.player2_remaining_time == 0:
+                or self.remaining_time == 0 and self.turn == 'black':
             return 'blanc'
         return None
-    
-    def check_win(self):
-        """ Vérifie si la partie est terminée. """
-        winner = self.winner()
-        if winner is not None:
-            print(f"Le joueur {winner} a gagne la partie !")
-            return False
-        return True
 
     def quit_game(self):
         """ Permet de quitter le jeu. """

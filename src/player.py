@@ -1,4 +1,4 @@
-class Test:
-    
+class Player:
+
     def __init__(self):
         pass

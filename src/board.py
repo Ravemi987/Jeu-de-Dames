@@ -167,7 +167,7 @@ class Board:
                                          possible_directions, piece.row, piece.col))
         
         valid_moves = self._clean_possible_moves(possible_moves)
-        self.print_valid_moves(valid_moves)
+        #self.print_valid_moves(valid_moves)
         
         return valid_moves
 

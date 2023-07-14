@@ -6,6 +6,7 @@ class Screen:
         - taille (hauteur et largeur) de la fenêtre principale
         - taille (hauteur et largeur) de la fenêtre de jeu (plateau)
         - taille d'une case
+        - tailles des polices d'écriture
         - marge pour tracer des cercles dans les cases
 
     """
@@ -15,6 +16,7 @@ class Screen:
         self.screen_height = screen_height
         self.board_width = board_width
         self.board_height = board_height
-        self.font_size = font_size
+        self.digital_font_size = font_size
+        self.text_font_size = font_size // 2
         self.square_size = self.board_width // COLS
         self.padding = 0.33 * self.square_size
