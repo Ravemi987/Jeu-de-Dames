@@ -53,6 +53,7 @@ class Main:
 
         board = self.game.board
         dragger = self.game.dragger
+        dragger.reset()
         previously_selected_piece = None
 
         return board, dragger, previously_selected_piece
@@ -127,11 +128,13 @@ class Main:
         board, dragger, previously_selected_piece = self._init_loop()
 
         while run:
+            # ====
             if self.game.playing:
                 self.game.elapsed_time = time.time() - self.game.start_time
                 self.game.remaining_time = self.game.get_remaining_time() - self.game.elapsed_time
                 if self.game.remaining_time < 0:
                     self.game.remaining_time = 0
+            # ====
 
             clock.tick(self.config.get_fps())
             self.game.update(clock.get_fps())
@@ -146,13 +149,14 @@ class Main:
                     mouse_pos = pygame.mouse.get_pos()
                     dragger.update_mouse(mouse_pos)
                     clicked_row, clicked_col = self.get_pos_from_mouse((dragger.mouseX, dragger.mouseY))
-                    print(f"mouse: {pygame.mouse.get_pos()}, dragger: {dragger.mouseX, dragger.mouseY}, origin: {self.config.get_board_pos()}, {clicked_row, clicked_col}, {self.config.window.square_size}")
+                    #print(f"mouse: {pygame.mouse.get_pos()}, dragger: {dragger.mouseX, dragger.mouseY}, origin: {self.config.get_board_pos()}, {clicked_row, clicked_col}, {self.config.window.square_size}")
 
                     window_check = dragger.in_window(mouse_pos[0], mouse_pos) and dragger.in_window(mouse_pos[1], mouse_pos)
-                    if window_check and board.in_range(clicked_row, clicked_col) and not(board.is_empty_square(clicked_row, clicked_col)):
+                    if window_check and not(board.is_empty_square(clicked_row, clicked_col)):
                         clicked_piece = board.get_piece(clicked_row, clicked_col)
                         dragger.drag_piece(clicked_piece)
                         self.game.select_piece(clicked_piece)
+                        
                         if not self.game.playing:
                             self.game.playing = True
                             self.game.start_time = time.time()
@@ -183,7 +187,7 @@ class Main:
                     released_row, released_col = self.get_pos_from_mouse((dragger.mouseX, dragger.mouseY))
                     window_check = dragger.in_window(mouse_pos[0], mouse_pos) and dragger.in_window(mouse_pos[1], mouse_pos)
 
-                    if window_check and board.in_range(released_row, released_col):
+                    if window_check:
                         released_piece = board.get_piece(released_row, released_col)
 
                     if previously_selected_piece is not None and released_piece == previously_selected_piece \
@@ -210,7 +214,7 @@ class Main:
                 board, dragger, previously_selected_piece = self._init_loop()
 
             for button in self.config.get_buttons_list():
-                if not button.pressed and button.name == "restart_button":
+                if button.pressed and button.id == "restart_button":
                     board, dragger, previously_selected_piece = self._init_loop()
 
             pygame.display.update() 

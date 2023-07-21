@@ -1,4 +1,6 @@
 from .constants import *
+from .config import Config
+from .piece import Piece
 
 class Dragger:
     """
@@ -9,8 +11,8 @@ class Dragger:
     et les coordonnées du curseur de la souris que la pièce doit suivre.
     """
     
-    def __init__(self, config):
-        self.piece = None
+    def __init__(self, config: Config):
+        self.piece: Piece = None
         self.dragging = False
         self.config = config
         self.mouseX = 0
@@ -48,3 +50,9 @@ class Dragger:
         """ Désactive le dragger pour la pièce. """
         self.piece = None
         self.dragging = False
+
+    def reset(self):
+        self.piece: Piece = None
+        self.dragging = False
+        self.mouseX = 0
+        self.mouseY = 0

@@ -1,11 +1,17 @@
 import pygame
 from .theme import Theme
 from .screen import Screen
+from .button import Button
 
 class Config:
     """
-    Classe qui permet de gérer les thèmes et eventuellement plus tard
-    les sons ou la musique.
+    Classe qui permet de gérer:
+        - les thèmes
+        - Les dimensions de la fenêtre de jeu,
+        - les polices d'écritures
+        - les fps
+        - l'opacité
+        - la clock (durée maximum et bonus de temps)
     """
     
     def __init__(self):
@@ -89,6 +95,6 @@ class Config:
         """ Ajoute un bouton. """
         self.buttons_list.append(button)
 
-    def get_buttons_list(self):
+    def get_buttons_list(self) -> list[Button]:
         """ Renvoie la liste des boutons. """
         return self.buttons_list

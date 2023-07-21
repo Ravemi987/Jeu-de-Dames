@@ -9,7 +9,7 @@ class Piece:
     une position sur l'écran (x, y.)
     """
     
-    def __init__(self, row, col, color, name='pawn', side=1, sprite=None):
+    def __init__(self, row, col, color, name='pawn', side="bottom", sprite=None):
         self.row = row
         self.col = col
         self.color = color
@@ -18,9 +18,9 @@ class Piece:
         self.set_sprite()
 
         if self.color == 'white':
-            self.direction, self.last_row = (-1, 0) if side == 1 else (1, ROWS - 1)
+            self.direction, self.last_row = (-1, 0) if side == "bottom" else (1, ROWS - 1)
         else:
-             self.direction, self.last_row = (1, ROWS - 1) if side == 1 else (-1, 0)
+             self.direction, self.last_row = (1, ROWS - 1) if side == "bottom" else (-1, 0)
 
     def set_sprite(self):
         """ Load l'image correspondant à la pièce. """

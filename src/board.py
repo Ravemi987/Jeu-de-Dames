@@ -18,7 +18,7 @@ class Board:
         self.last_move = None
         self.init_board(config, player)
 
-    def get_piece(self, row, col):
+    def get_piece(self, row, col) -> Piece:
         """ 
         Récupère les caractéristiques de la pièce contenue dans la case
         de coordonnées (row, col). Il faut d'abord vérifier que cette case n'est pas vide.
@@ -52,7 +52,7 @@ class Board:
 
         return team_pieces_list
     
-    def get_all_pieces(self):
+    def get_all_pieces(self) -> list[Piece]:
         """ Renvoi sous forme de liste la totalité des pions du plateau """
         pieces_list = []
         for row in range(len(self.board)):
@@ -61,7 +61,7 @@ class Board:
                     pieces_list.append(self.get_piece(row, col))
         return pieces_list
 
-    def move_piece(self, move):
+    def move_piece(self, move: Move):
         """ Déplace une pièce sur le plateau (sans prendre en compte les règles). """
         piece = self.get_piece(move.initial_pos[0], move.initial_pos[1])
         initial_pos, final_pos = move.get_initial_pos(), move.get_final_pos()
@@ -108,21 +108,21 @@ class Board:
         print('\n')
     
     @staticmethod
-    def get_most_effective_move(possible_moves):
+    def get_most_effective_move(possible_moves: list[Move]):
         """"
         Cherche le mouvement le plus efficace parmi tous les déplacements possibles
         de toutes les pièces. Il s'agit du déplacement qui n'est pas libre et dont
         la liste contient le plus de pions qui seraient capturés et éliminés du plateau.
         Si ce déplacement n'existe pas (il n'y a donc que des déplacements libres), on renvoie None.
         """
-        most_effective_move = None
+        most_effective_move: Move = None
         for move in possible_moves:
             if most_effective_move is None or len(move.get_skipped_list()) > len(most_effective_move.get_skipped_list()):
                 most_effective_move = move
 
         return most_effective_move
     
-    def _extract_valid_moves(self, possible_moves, most_effective_move):
+    def _extract_valid_moves(self, possible_moves: list[Move], most_effective_move: Move):
         """"
         Extrait les déplacement qui ont la même valeur que le mouvement le plus efficient (most_effective_capture).
         Cela désigne les déplacement dont le nombre de pions capturés est le même.
@@ -150,7 +150,7 @@ class Board:
         else:
             return possible_moves
 
-    def get_valid_moves(self, color_turn):
+    def get_valid_moves(self, color_turn) -> list[Move]:
         """"
         Récupère l'ensemble des déplacements valides de toutes les pièces
         de couleur 'color_turn' présentes sur le plateau à un certain tour.
@@ -172,7 +172,7 @@ class Board:
         return valid_moves
 
 
-    def _get_piece_moves(self, piece, start_position, last_direction, skipped_list,
+    def _get_piece_moves(self, piece: Piece, start_position, last_direction, skipped_list,
                   possible_directions, current_row, current_col):
         """
         Récupère l'ensemble des déplacements possibles d'une pièce.
@@ -236,7 +236,7 @@ class Board:
             return move_row, move_col, squares_list
         return move_row, move_col
     
-    def _check_free_moves(self, piece, dx, dy, piece_moves, row, col):
+    def _check_free_moves(self, piece:Piece, dx, dy, piece_moves, row, col):
         """
         S'occupe de la partie "déplacement libre" de la fonction récursive '_get_piece_moves'.
         Si un déplacement libre est possible, on renvoie True ainsi que la liste des déplacements mise à jour.
@@ -258,7 +258,7 @@ class Board:
 
         return False, piece_moves, row, col
     
-    def _check_recursion_stop_condition(self, direction, piece, row, col):
+    def _check_recursion_stop_condition(self, direction, piece: Piece, row, col):
         """
         S'occupe du cas d'arrêt de la fonction récursive '_get_piece_moves'.
         Soit la capture n'est pas possible donc on renvoie le couple (False, None), soit
@@ -289,12 +289,12 @@ class Board:
                 # Les pièces sont uniquement sur les cases foncées
                 if col % 2 == ((row + 1) % 2):
                     if row < 4:
-                        if player_side == 1:
+                        if player_side == "bottom":
                             self.board[row].append(Piece(row, col, 'black', side=player_side)) 
                         else:
                             self.board[row].append(Piece(row, col, 'white', side=player_side))
                     elif row > 5:
-                        if player_side == 1:
+                        if player_side == "bottom":
                             self.board[row].append(Piece(row, col, 'white', side=player_side))  
                         else:
                             self.board[row].append(Piece(row, col, 'black', side=player_side))
@@ -344,7 +344,7 @@ class Board:
         self._init_empty_board()
         board_config = data[config_name]
         for piece in board_config:
-            if player_side == 1:
+            if player_side == "bottom":
                 row =  board_config[piece]['row']
                 col = board_config[piece]['col']
             else:
