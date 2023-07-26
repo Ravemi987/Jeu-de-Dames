@@ -1,7 +1,7 @@
 {
-    "/save_board" : "self.game.board.save_board_config",
-    "/quit": "self.game.quit_game",
-    "/load_config": "self.game.reset",
-    "/help_cmds": "self.print_commands",
-    "/help_configs": "self.print_configs"
+    "save_board" : "self.game.board.save_board_config",
+    "quit": "self.game.quit_game",
+    "load_config": "self.game.reset",
+    "help_cmds": "self.print_commands",
+    "help_configs": "self.print_configs"
 }

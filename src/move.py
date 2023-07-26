@@ -1,10 +1,14 @@
+from .piece import Piece
+
 class Move:
     """
     Un 'Move' ou déplacement, ou bien encore mouvement,
     possède une case de départ, une case d'arrivée et une liste des cases
     qui on été sautées par le déplacement de la case de départ à la case d'arrivée.
     """
-    def __init__(self, initial_pos, final_pos, skipped_list=[]):
+    def __init__(self, turn, piece: Piece, initial_pos, final_pos, skipped_list=[]):
+        self.turn = turn
+        self.piece = piece
         self.initial_pos = initial_pos
         self.final_pos = final_pos
         self.skipped_list = skipped_list
@@ -24,6 +28,22 @@ class Move:
     def get_skipped_list(self):
         """ Permet de récupérer la liste des pièces capturées. """
         return self.skipped_list
+    
+    def get_piece(self):
+        """ Retourne la pièce déplacée. """
+        return self.piece
+    
+    def get_player_turn(self):
+        """ Renvoi le joueur à qui c'est le tour. """
+        return "player1" if self.turn == 'white' else "player2"
+    
+    def is_capture(self):
+        """ Vérifie si un déplacement est une capture. """
+        return not self.is_empty_skipped_list()
+    
+    def is_pawn_move(self):
+        """ Vérifie si un pion est déplacé. """
+        return self.piece.name == 'pawn'
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Move):

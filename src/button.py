@@ -50,10 +50,11 @@ class Button:
         """ Exécute la commande suite au click. """
         x, y = pygame.mouse.get_pos()
         if self.rect.collidepoint([x, y]):
-            if pygame.mouse.get_pressed()[0] and not self.pressed:
-                self.pressed = True
-                self.command()
-
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN and not self.pressed:
+                    self.pressed = True
+                    self.command()
+ 
     def show(self):
         """ 
         Affiche le bouton :
@@ -70,5 +71,8 @@ class Button:
 
     def __eq__(self, other):
         if isinstance(other, Button):
-            return self.id == other.id
+            return self.id == other.id and self.pressed == other.pressed
         return False
+
+    def __repr__(self):
+        return f"{self.id}: Pressed={self.pressed}"

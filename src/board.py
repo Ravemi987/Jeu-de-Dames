@@ -13,10 +13,46 @@ class Board:
 
     def __init__(self, config, player):
         self.board = []
-        self.black_pieces_left = 20 if config == 1 else len(self.get_team_pieces('black'))
-        self.white_pieces_left = 20 if config == 1 else len(self.get_team_pieces('white'))
+        self.config = config
+        self._init_pieces_dictionary()
         self.last_move = None
         self.init_board(config, player)
+
+    def _init_pieces_dictionary(self):
+        """ Initialise le dictionnaire contenant le nombre de pions et de dames pour chaque joueur."""
+        self.pieces_dict = {
+            'white': {
+                'pawn': 20 if self.config == 1 else 0,
+                'queen': 0
+            },
+            'black': {
+                'pawn': 20 if self.config == 1 else 0,
+                'queen': 0
+            }
+        }
+        self.update_pieces_count()
+
+    def update_pieces_count(self):
+        """ Met à jour le dictionnaire contenant le nombre de pions et de dames pour chaque joueur. """
+        for color in ['white', 'black']:
+            for piece in self.get_team_pieces(color):
+                self.pieces_dict[piece.color][piece.name] += 1
+    
+    def get_queens_count(self, color):
+        """ Retourne le nombre de dames du joueur qui a la couleur 'color'. """
+        return self.pieces_dict[color]['queen']
+    
+    def get_pawns_count(self, color):
+        """ Retourne le nombre de pions du joueur qui a la couleur 'color'. """
+        return self.pieces_dict[color]['pawn']
+    
+    def get_pieces_count(self, color):
+        """ Retourne le nombre de pièces du joueur qui a la couleur 'color'. """
+        return self.pieces_dict[color]['queen'] + self.pieces_dict[color]['pawn']
+    
+    def get_total_pieces_count(self):
+        """ Retourne le nombre total de pièces sur le plateau. """
+        return self.get_pieces_count('white') + self.get_pieces_count('black')
 
     def get_piece(self, row, col) -> Piece:
         """ 
@@ -37,13 +73,13 @@ class Board:
     def is_in_range_and_empty(self, row, col):
         """ Vérifie les coordonnées (row, col) correspondent à une case vide du plateau. """
         return self.in_range(row, col) and self.is_empty_square(row, col)
-    
+
     def get_team_pieces(self, color):
         """ 
         Renvoi sous forme de liste la totalité des pions appartenant au joueur courant.
         Réinitialise également la liste des déplacements de chaque pièce. 
         """
-        team_pieces_list = []
+        team_pieces_list: list[Piece] = []
         for row in range(len(self.board)):
             for col in range(len(self.board)):
                 if not(self.is_empty_square(row, col)) and self.board[row][col].color == color:
@@ -54,7 +90,7 @@ class Board:
     
     def get_all_pieces(self) -> list[Piece]:
         """ Renvoi sous forme de liste la totalité des pions du plateau """
-        pieces_list = []
+        pieces_list: list[Piece] = []
         for row in range(len(self.board)):
             for col in range(len(self.board)):
                 if not(self.is_empty_square(row, col)):
@@ -63,7 +99,7 @@ class Board:
 
     def move_piece(self, move: Move):
         """ Déplace une pièce sur le plateau (sans prendre en compte les règles). """
-        piece = self.get_piece(move.initial_pos[0], move.initial_pos[1])
+        piece: Piece = move.get_piece() #self.get_piece(move.initial_pos[0], move.initial_pos[1])
         initial_pos, final_pos = move.get_initial_pos(), move.get_final_pos()
 
         # On déplace la pièce
@@ -81,10 +117,7 @@ class Board:
         """ Ajoute une pièce sur le plateau. Par défaut, ce n'est pas une dame. """
         piece = Piece(row, col, color, name, side)
         self.board[row][col] = piece
-        if color == 'white':
-            self.white_pieces_left += 1
-        else:
-            self.black_pieces_left += 1
+        self.pieces_dict[piece.color][piece.name] += 1
         
     def remove_pieces(self, skipped_pieces):
         """ 
@@ -95,10 +128,7 @@ class Board:
         for coords in skipped_pieces:
             piece = self.get_piece(coords[0], coords[1])
             self.board[piece.row][piece.col] = 0
-            if piece.color == 'white':
-                self.white_pieces_left -= 1
-            else:
-                self.black_pieces_left -= 1
+            self.pieces_dict[piece.color][piece.name] -= 1
 
     @staticmethod
     def print_valid_moves(valid_moves):
@@ -163,7 +193,7 @@ class Board:
         for piece in team_pieces_list:
             skipped_list = []
             start_position = (piece.row, piece.col)
-            possible_moves.extend(self._get_piece_moves(piece, start_position, last_dir, skipped_list,
+            possible_moves.extend(self._get_piece_moves(color_turn, piece, start_position, last_dir, skipped_list,
                                          possible_directions, piece.row, piece.col))
         
         valid_moves = self._clean_possible_moves(possible_moves)
@@ -172,7 +202,7 @@ class Board:
         return valid_moves
 
 
-    def _get_piece_moves(self, piece: Piece, start_position, last_direction, skipped_list,
+    def _get_piece_moves(self, player_turn, piece: Piece, start_position, last_direction, skipped_list,
                   possible_directions, current_row, current_col):
         """
         Récupère l'ensemble des déplacements possibles d'une pièce.
@@ -191,7 +221,7 @@ class Board:
             # Vérification pour un potentiel déplacement libre
             if last_direction == (0, 0) and self.is_in_range_and_empty(target_row, target_col):
                 is_free_move_available, piece_moves, target_row, target_col = self._check_free_moves(
-                    piece, dx, dy, piece_moves, target_row, target_col
+                    player_turn, piece, dx, dy, piece_moves, target_row, target_col
                 )
                 if is_free_move_available:
                     continue
@@ -212,8 +242,8 @@ class Board:
                     new_last_dir = current_direction
                     skipped = skipped_list + [(target_row, target_col)]
                     # On ajoute le nouveau déplacement et on appelle la fonction récursivement
-                    piece_moves.append(Move((piece.row, piece.col), (new_target_row, new_target_col), skipped))
-                    piece_moves.extend(self._get_piece_moves(piece, start_position, new_last_dir, skipped,
+                    piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (new_target_row, new_target_col), skipped))
+                    piece_moves.extend(self._get_piece_moves(player_turn, piece, start_position, new_last_dir, skipped,
                                                      possible_directions, new_target_row, new_target_col))
         return piece_moves
     
@@ -236,7 +266,7 @@ class Board:
             return move_row, move_col, squares_list
         return move_row, move_col
     
-    def _check_free_moves(self, piece:Piece, dx, dy, piece_moves, row, col):
+    def _check_free_moves(self, player_turn, piece:Piece, dx, dy, piece_moves, row, col):
         """
         S'occupe de la partie "déplacement libre" de la fonction récursive '_get_piece_moves'.
         Si un déplacement libre est possible, on renvoie True ainsi que la liste des déplacements mise à jour.
@@ -249,12 +279,12 @@ class Board:
         """
         if not piece.is_queen():
             if dx == piece.direction:
-                piece_moves.append(Move((piece.row, piece.col), (row, col), []))
+                piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (row, col), []))
                 return True, piece_moves, row, col
         else:
             row, col, empty_squares_list = self._check_diagonal_squares(dx, dy, row, col, True)
             for square in empty_squares_list:
-                piece_moves.append(Move((piece.row, piece.col), (square[0], square[1]), []))
+                piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (square[0], square[1]), []))
 
         return False, piece_moves, row, col
     

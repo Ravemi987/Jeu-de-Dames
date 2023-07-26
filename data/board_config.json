@@ -264,5 +264,55 @@
             "color": "black",
             "name": "queen"
         }
+    },
+    "Repetition": {
+        "piece_1": {
+            "row": 0,
+            "col": 1,
+            "color": "black",
+            "name": "queen"
+        },
+        "piece_2": {
+            "row": 0,
+            "col": 3,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_3": {
+            "row": 0,
+            "col": 7,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_4": {
+            "row": 1,
+            "col": 0,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_5": {
+            "row": 3,
+            "col": 0,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_6": {
+            "row": 4,
+            "col": 9,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_7": {
+            "row": 7,
+            "col": 6,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_8": {
+            "row": 9,
+            "col": 0,
+            "color": "black",
+            "name": "queen"
+        }
     }
 }

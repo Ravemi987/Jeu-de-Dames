@@ -7,6 +7,7 @@ from .button import Button
 from .clock import Clock
 from .move import Move
 from .piece import Piece
+from .hash_key import HashKey
 from .constants import *
 import sys, time
 
@@ -27,18 +28,9 @@ class Game:
     
     def __init__(self, game_config: Config, board_config):
         self._init(game_config, board_config)
-
-        self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
-        self.screen.set_alpha(self.game_config.transparency)
-        self.board_window = pygame.Surface([self.game_config.window.board_width, self.game_config.window.board_height], pygame.SRCALPHA)
-        self.board_window.set_alpha(self.game_config.transparency)
-        self.board_rect = pygame.Rect(self.game_config.get_board_pos()[0], self.game_config.get_board_pos()[1],
-                                      self.game_config.window.board_width, self.game_config.window.board_height)
-
+        self._init_windows()
         self.clock1 = Clock(self.game_config, self.screen, 'white', self.game_config.game_duration, self.player_side)
         self.clock2 =  Clock(self.game_config, self.screen, 'black', self.game_config.game_duration, self.player_side)
-
-        self.dragger = Dragger(game_config)
 
     # Méthode privée
     def _init(self, game_config: Config, board_config):
@@ -46,16 +38,38 @@ class Game:
         self.selected_piece: Piece = None
         self.hovered_square_pos = None
         self.player_side = "bottom"
-        self.board = Board(board_config, self.player_side)
         self.turn = 'white'
-        self.valid_moves = self.board.get_valid_moves(self.turn)
-
         self.winner = None
-        self.playing = False
+        self.has_start = False
         self.start_time = time.time()
         self.player1_remaining_time = self.player2_remaining_time = self.game_config.game_duration
         self.remaining_time = self.game_config.game_duration
         self.elapsed_time = 0
+
+        self.board = Board(board_config, self.player_side)
+        self.dragger = Dragger(game_config)
+        self.hash_key = HashKey(self.board, self.turn, self.player_side)
+        #print(self.hash_key.get_value())
+        self.hash_list = [self.hash_key.get_value()]
+        self.valid_moves = self.board.get_valid_moves(self.turn)
+        self.moves_played: list[Move] = []
+        self._init_equivalence_classes()
+
+    def _init_windows(self):
+        self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
+        self.screen.set_alpha(self.game_config.transparency)
+        self.board_window = pygame.Surface([self.game_config.window.board_width, self.game_config.window.board_height], pygame.SRCALPHA)
+        self.board_window.set_alpha(self.game_config.transparency)
+    
+    def _init_equivalence_classes(self):
+        """ Initialise les piles qui sont les classes d'équivalence de la congruence modulo 4. """
+         # Classes d'équivalences de représentants [0, 1, 2, 3]
+        self.eqc_0, self.eqc_1, self.eqc_2, self.eqc_4 = [], [], [], []
+        self.quotient_set = [self.eqc_0, self.eqc_1, self.eqc_2, self.eqc_4]
+
+    def _init_draw_counters(self):
+        self.no_move_repetition_counter = 0
+        self.pieces_repetition_counter  = 0
 
     def get_remaining_time(self):
         """ Retourne le temps de jeu restant pour le joueur courant. """
@@ -89,16 +103,8 @@ class Game:
     def change_resolution(self):
         """ Modifie la résolution d'écran. """
         self.game_config.change_resolution()
-
-        self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
-        self.screen.set_alpha(self.game_config.transparency)
-
-        self.board_window = pygame.Surface([self.game_config.window.board_width, self.game_config.window.board_height], pygame.SRCALPHA)
-        self.board_window.set_alpha(self.game_config.transparency)
-
-        self.board_rect = pygame.Rect(self.game_config.get_board_pos()[0], self.game_config.get_board_pos()[1],
-                                self.game_config.window.board_width, self.game_config.window.board_height)
-
+        self._init_windows()
+        
     def round_board(self):
         """ Dessine le bord arrondi du plateau. """
         pygame.draw.rect(self.screen, BG, 
@@ -114,6 +120,8 @@ class Game:
         # Position du plateau
         self.game_config.set_board_pos((200, (self.screen.get_height() - self.board_window.get_height()) // 2))
         self.screen.blit(self.board_window, self.game_config.get_board_pos())
+        self.board_rect = pygame.Rect(self.game_config.get_board_pos()[0], self.game_config.get_board_pos()[1],
+                                      self.game_config.window.board_width, self.game_config.window.board_height)
         # Bords arrondis
         self.round_board()
         self.draw_board(self.board_window, theme)
@@ -122,9 +130,7 @@ class Game:
             self.show_hover(self.board_window, theme)
             self.dragger.update_blit(self.board_window)
 
-        self.winner = self.get_winner()
-        if self.winner is not None:
-            self.show_end_screen(self.winner)
+        self.check_end_game()
 
         self.show_fps(self.screen, tick)
         self.show_clock()
@@ -175,6 +181,8 @@ class Game:
         Change le tour et calcul les déplacements valides
         du joueur auquel le tour vient de passer.
         """
+        print(self.board.pieces_dict)
+
         if self.turn == 'white':
             self.player1_remaining_time = self.remaining_time + self.game_config.bonus_time
             self.remaining_time = self.player2_remaining_time
@@ -203,7 +211,13 @@ class Game:
             # Si le déplacement n'est pas libre, on supprime toutes ces pièces du plateau
             if len(skipped_pieces) > 0:
                 self.board.remove_pieces(skipped_pieces)
+            self.moves_played.append(move)
             self.change_turn()
+
+            self.hash_key.update(move, self.turn)
+            self.hash_list.append(self.hash_key.get_value())
+            #print(self.hash_key.get_value())
+
             return True
         return False
     
@@ -273,23 +287,29 @@ class Game:
         text.set_alpha(self.game_config.transparency)
         window.blit(text, [10, 0])
 
+    @staticmethod
+    def update_clocks(player_clock: Clock, opponent_clock: Clock, 
+                player_rmng_time, opponent_rmng_time):
+        player_clock.set_remaining_time(player_rmng_time)
+        player_clock.tick()
+        opponent_clock.set_remaining_time(opponent_rmng_time)
+        opponent_clock.pause()
+
     def show_clock(self):
         """ Affiche les horloges. """
-        if self.playing:
+        if self.has_start:
             if self.turn == 'white':
-                self.clock1.set_remaining_time(self.remaining_time)
-                self.clock1.tick()
-                self.clock2.set_remaining_time(self.player2_remaining_time)
-                self.clock2.pause()
+                self.update_clocks(
+                    self.clock1, self.clock2, self.remaining_time, self.player2_remaining_time
+                    )
             else:
-                self.clock2.set_remaining_time(self.remaining_time)
-                self.clock2.tick()
-                self.clock1.set_remaining_time(self.player1_remaining_time)
-                self.clock1.pause()
+                self.update_clocks(
+                    self.clock2, self.clock1, self.remaining_time, self.player1_remaining_time
+                    )
         self.clock1.update()
         self.clock2.update()
 
-    def show_end_screen(self, winner):
+    def show_end_screen(self, text):
         """ Affiche l'écran de fin. """
         board_origin = self.game_config.get_board_pos()
 
@@ -312,27 +332,121 @@ class Game:
             font="assets/recharge.rg-bold.otf",
             font_size=self.game_config.window.text_font_size
         )
-        
-        if restart_button not in self.game_config.get_buttons_list():
-            self.game_config.add_button(restart_button)
 
         end_screen = pygame.Surface([end_screen_width, end_screen_height], pygame.SRCALPHA)
         pygame.draw.rect(end_screen, BG, (0, 0, end_screen_width, end_screen_height), border_radius=15)
-        screen_text_surface = self.game_config.text_font.render(f"Le joueur {winner} a gagné la partie !", True, (255, 255, 255))
+        screen_text_surface = self.game_config.text_font.render(text, True, (255, 255, 255))
         
         end_screen.blit(screen_text_surface, [(end_screen_width - screen_text_surface.get_width()) // 2, end_screen_height // 4])
         self.screen.blit(end_screen, [end_screen_center_x, end_screen_center_y])
         restart_button.show()
 
+        if restart_button not in self.game_config.get_buttons_list():
+            self.game_config.add_button(restart_button)
+
     def get_winner(self):
         """ Renvoi le gagnant de la partie. """
-        if self.board.white_pieces_left == 0 and self.board.black_pieces_left > 0 \
-                or self.remaining_time == 0 and self.turn == 'white':
+        if self.board.get_pieces_count('white') == 0 and self.board.get_pieces_count('black') > 0 \
+                or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'white':
             return 'noir'
-        elif self.board.black_pieces_left == 0 and self.board.white_pieces_left > 0 \
-                or self.remaining_time == 0 and self.turn == 'black':
+        elif self.board.get_pieces_count('black') == 0 and self.board.get_pieces_count('white') > 0 \
+                or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'black':
             return 'blanc'
         return None
+    
+    def check_win(self):
+        """ Vérifie s'il y a un gagnant. """
+        return self.get_winner() is not None
+
+    def draw_by_repetition(self):
+        """ 
+        La fin de partie est considérée comme égale lorsque la même position se représente pour la troisième fois,
+        le même joueur ayant le trait.
+        On créé des piles, les classes d'équivalences de la congruence modulo 4.
+        On range chaque valeur de la liste contenant les valeurs des clés de hachage dans ces classes.
+        Si l'on a la même valeurs trois fois côte-à-côte dans la classe dans l'une des classes d'équivalences,
+        c'est match nul. 
+        """
+        # L'ensemble des classes d'équivalences est l'ensemble quotient
+        equivalence_class = self.quotient_set[(len(self.hash_list) - 1)%4]
+        hash_key = self.hash_list[len(self.hash_list) - 1]
+        equivalence_class.append(hash_key)
+        if len(self.hash_list) >= 9 and len(equivalence_class) >= 3:
+            if equivalence_class[-1] == equivalence_class[-2] == equivalence_class[-3]:
+                return True
+        return False
+
+    def draw_by_queen_moves_repetition(self):
+        """
+        Si, durant 25 coups, il n'y a ni déplacement de pion ni prise, 
+        la fin de partie est considérée comme égale.
+        """
+        count = 0
+        for move in reversed(self.moves_played):
+            if move.is_pawn_move() or move.is_capture():
+                break
+            count += 1
+            if count >= 25:
+                return True
+        return False
+
+    def draw_by_pieces_and_repetition(self):
+        """
+        S'il n'y a plus que trois dames, deux dames et un pion, ou une dame et deux pions contre une dame, 
+        la fin de partie sera considérée comme égale lorsque les deux joueurs auront encore joué
+        chacun 16 coups au maximum.
+        """
+        if self.board.get_total_pieces_count() == 4:
+            player1, player2 = 'white', 'black'
+            player1_pieces = (self.board.get_pieces_count(player1), self.board.get_queens_count(player1))
+            player2_pieces = (self.board.get_pieces_count(player2), self.board.get_queens_count(player2))
+            cond1 = player1_pieces == (0, 3) and player2_pieces == (0, 1) \
+                        or player1_pieces == (0, 1) and player2_pieces == (0, 3)
+            cond2 = player1_pieces == (1, 2) and player2_pieces == (0, 1) \
+                        or player1_pieces == (0, 1) and player2_pieces == (1, 2)
+            cond3 = player1_pieces == (2, 1) and player2_pieces == (0, 1) \
+                        or player1_pieces == (0, 1) and player2_pieces == (2, 1)
+            if cond1 or cond2 or cond3:
+                self.no_move_repetition_counter += 1
+                if self.no_move_repetition_counter >= 16:
+                    return True
+        return False
+
+    def draw_by_pieces(self):
+        """
+        Pour autant qu'il n'y ait pas de phase de jeu en cours, 
+        la fin de partie de deux dames contre une dame, et a fortiori, de une dame contre une dame, 
+        sera considérée égale.
+        """
+        if self.board.get_total_pieces_count() <= 3:
+            player1, player2 = 'white', 'black'
+            player1_pieces = (self.board.get_pieces_count(player1), self.board.get_queens_count(player1))
+            player2_pieces = (self.board.get_pieces_count(player2), self.board.get_queens_count(player2))
+            cond1 = player1_pieces == (0, 2) and player2_pieces == (0, 1) \
+                        or player1_pieces == (0, 1) and player2_pieces == (0, 2)
+            cond2 = player1_pieces == player2_pieces == (0, 1)
+            if cond1 or cond2:
+                return True
+        return False
+
+    def check_draw(self):
+        """ Vérifie si l'issue de la partie doit être égale. """
+        return self.draw_by_repetition() or self.draw_by_queen_moves_repetition() or \
+                self.draw_by_pieces_and_repetition()
+    
+    def check_end_game(self):
+        """ Vérifie si la partie est terminée. Si oui, affiche l'écran de fin. """
+        win = self.check_win()
+        draw = self.check_draw()
+        if win:
+            self.dragger.undrag_piece()
+            self.show_end_screen(f"Le joueur {self.winner} a gagné la partie !")
+            return True
+        elif draw:
+            self.dragger.undrag_piece()
+            self.show_end_screen(f"Egalité !")
+            return True
+        return False
 
     def quit_game(self):
         """ Permet de quitter le jeu. """

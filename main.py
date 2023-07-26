@@ -2,6 +2,8 @@ import pygame
 from src.constants import *
 from src.game import Game
 from src.config import Config
+from src.board import Board
+from src.dragger import Dragger
 import threading
 from queue import Queue
 import ctypes
@@ -43,20 +45,7 @@ class Main:
         self.config = Config()
         self.game = Game(self.config, 2)
         self.command_queue = Queue()
-
-    def _init_loop(self):
-        # On créé un nouveau thread
-        input_thread = threading.Thread(target=self.input_thread)
-        # Type de thread qui s'exécute en arrière-plan sans bloquer la fin de l'exécution du programme
-        input_thread.daemon = True
-        input_thread.start()
-
-        board = self.game.board
-        dragger = self.game.dragger
-        dragger.reset()
-        previously_selected_piece = None
-
-        return board, dragger, previously_selected_piece
+        self.mouse_pos = (0, 0)
     
     def check_command(self, user_input):
         """ 
@@ -117,6 +106,87 @@ class Main:
             # 'put' ajoute un élément dans la file
             self.command_queue.put(user_input)
 
+    def _init_loop(self):
+        # On créé un nouveau thread
+        input_thread = threading.Thread(target=self.input_thread)
+        # Type de thread qui s'exécute en arrière-plan sans bloquer la fin de l'exécution du programme
+        input_thread.daemon = True
+        input_thread.start()
+
+        board = self.game.board
+        dragger = self.game.dragger
+        previously_selected_piece = None
+
+        return board, dragger, previously_selected_piece
+    
+    def update_clock(self):
+        """ Met à jour les pendules du jeu. """
+        if self.game.has_start:
+            self.game.elapsed_time = time.time() - self.game.start_time
+            self.game.remaining_time = self.game.get_remaining_time() - self.game.elapsed_time
+            if self.game.remaining_time < 0:
+                self.game.remaining_time = 0
+
+    def check_ButtonDown(self, board: Board, dragger: Dragger):
+        """ Gère l'évènement: pygame.MOUSEBUTTONDOWN. """
+        clicked_piece = None
+        clicked_row, clicked_col = self.get_pos_from_mouse([dragger.mouseX, dragger.mouseY])
+
+        if self.game.board_rect.collidepoint(self.mouse_pos) and not(board.is_empty_square(clicked_row, clicked_col)):
+            clicked_piece = board.get_piece(clicked_row, clicked_col)
+            dragger.drag_piece(clicked_piece)
+            self.game.select_piece(clicked_piece)
+            
+            if not self.game.has_start:
+                self.game.has_start = True
+                self.game.start_time = time.time()
+        else:
+            if self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
+                can_move = self.game.move(clicked_row, clicked_col)
+                if not can_move:
+                    self.game.unselect_piece()
+            else:
+                self.game.unselect_piece()
+
+        return clicked_piece
+    
+    def in_board_window(self):
+        pass
+    
+    def check_MouseMotion(self, dragger: Dragger):
+        """ Gère l'évènement: pygame.MOUSEMOTION. """
+        hovered_row, hovered_col = self.get_pos_from_mouse([dragger.mouseX, dragger.mouseY])#(mouse_pos[0] - self.config.board_pos[0], mouse_pos[1] - self.config.board_pos[1]))
+        self.game.set_hover(hovered_row, hovered_col)
+
+    def check_ButtonUp(self, board: Board, dragger: Dragger, 
+                       clicked_piece, previously_selected_piece):
+        """ Gère l'évènement: pygame.MOUSEBUTTONUP. """
+        released_piece = None
+        released_row, released_col = self.get_pos_from_mouse([dragger.mouseX, dragger.mouseY])
+
+        if self.game.board_rect.collidepoint(self.mouse_pos):
+            released_piece = board.get_piece(released_row, released_col)
+
+        if previously_selected_piece is not None and released_piece == previously_selected_piece \
+                and clicked_piece == previously_selected_piece:
+            self.game.unselect_piece()
+        elif self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
+            self.game.move(released_row, released_col)
+        
+        dragger.undrag_piece()
+        previously_selected_piece = self.game.selected_piece
+
+        return previously_selected_piece
+    
+    def check_ButtonClick(self, board, dragger):
+        """ Vérifie si un bouton a été cliqué. """
+        for button in self.config.get_buttons_list():
+            if button.pressed and button.id == 'restart_button':
+                board = self.game.board
+                dragger = self.game.dragger
+                button.pressed = False
+        return board, dragger
+
     def mainloop(self):
         """ 
         Boucle principal qui créé et démarre le thread et gère les évènements
@@ -128,79 +198,37 @@ class Main:
         board, dragger, previously_selected_piece = self._init_loop()
 
         while run:
-            # ====
-            if self.game.playing:
-                self.game.elapsed_time = time.time() - self.game.start_time
-                self.game.remaining_time = self.game.get_remaining_time() - self.game.elapsed_time
-                if self.game.remaining_time < 0:
-                    self.game.remaining_time = 0
-            # ====
-
+            # Clock
+            self.update_clock()
             clock.tick(self.config.get_fps())
             self.game.update(clock.get_fps())
+            # Mouse
+            self.mouse_pos = pygame.mouse.get_pos()
+            dragger.update_mouse(self.mouse_pos)
 
             # pygame.event.get() renvoie une liste des actions (events)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
                 
-                # Clique enfoncé (gauche ou droit)
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    dragger.update_mouse(mouse_pos)
-                    clicked_row, clicked_col = self.get_pos_from_mouse((dragger.mouseX, dragger.mouseY))
-                    #print(f"mouse: {pygame.mouse.get_pos()}, dragger: {dragger.mouseX, dragger.mouseY}, origin: {self.config.get_board_pos()}, {clicked_row, clicked_col}, {self.config.window.square_size}")
+                if not self.game.check_end_game():
+                    # Clique enfoncé (gauche ou droit)
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        clicked_piece = self.check_ButtonDown(board, dragger)
+                        self.game.update(clock.get_fps())
 
-                    window_check = dragger.in_window(mouse_pos[0], mouse_pos) and dragger.in_window(mouse_pos[1], mouse_pos)
-                    if window_check and not(board.is_empty_square(clicked_row, clicked_col)):
-                        clicked_piece = board.get_piece(clicked_row, clicked_col)
-                        dragger.drag_piece(clicked_piece)
-                        self.game.select_piece(clicked_piece)
-                        
-                        if not self.game.playing:
-                            self.game.playing = True
-                            self.game.start_time = time.time()
-                    else:
-                        if self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
-                            can_move = self.game.move(clicked_row, clicked_col)
-                            if not can_move:
-                                self.game.unselect_piece()
-                        else:
-                            self.game.unselect_piece()
+                    # Déplacement de la souris
+                    elif event.type == pygame.MOUSEMOTION:
+                        self.check_MouseMotion(dragger)
 
-                    self.game.update(clock.get_fps())
-
-                # Déplacement de la souris
-                elif event.type == pygame.MOUSEMOTION:
-                    mouse_pos = pygame.mouse.get_pos()
-                    hovered_row, hovered_col = self.get_pos_from_mouse((mouse_pos[0] - self.config.board_pos[0], mouse_pos[1] - self.config.board_pos[1]))
-                    self.game.set_hover(hovered_row, hovered_col)
-
-                    if dragger.dragging:
-                        dragger.update_mouse(mouse_pos)
-
-                # Clique relâché (gauche ou droit)
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    mouse_pos = pygame.mouse.get_pos()
-                    dragger.update_mouse(mouse_pos)
-
-                    released_row, released_col = self.get_pos_from_mouse((dragger.mouseX, dragger.mouseY))
-                    window_check = dragger.in_window(mouse_pos[0], mouse_pos) and dragger.in_window(mouse_pos[1], mouse_pos)
-
-                    if window_check:
-                        released_piece = board.get_piece(released_row, released_col)
-
-                    if previously_selected_piece is not None and released_piece == previously_selected_piece \
-                            and clicked_piece == previously_selected_piece:
-                        self.game.unselect_piece()
-                    elif self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
-                        self.game.move(released_row, released_col)
-                    
-                    dragger.undrag_piece()
-                    previously_selected_piece = self.game.selected_piece
+                    # Clique relâché (gauche ou droit)
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        previously_selected_piece = self.check_ButtonUp(
+                            board, dragger, clicked_piece, previously_selected_piece
+                        )
 
                 # Touche 't' pour changer le thème
-                elif event.type == pygame.KEYDOWN:
+                if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_t:
                         self.game.change_theme()
                 
@@ -211,11 +239,10 @@ class Main:
             if not self.command_queue.empty():
                 command = self.command_queue.get()
                 self.check_command(command)
-                board, dragger, previously_selected_piece = self._init_loop()
+                board = self.game.board
+                dragger = self.game.dragger
 
-            for button in self.config.get_buttons_list():
-                if button.pressed and button.id == "restart_button":
-                    board, dragger, previously_selected_piece = self._init_loop()
+            board, dragger = self.check_ButtonClick(board, dragger)
 
             pygame.display.update() 
 

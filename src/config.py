@@ -28,7 +28,7 @@ class Config:
         self.board_pos = (0, 0)
         self.fps = 120
         self.transparency = 255
-        self.game_duration = 10
+        self.game_duration = 300
         self.bonus_time = 0
 
     def change_theme(self):

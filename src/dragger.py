@@ -19,7 +19,7 @@ class Dragger:
         self.mouseY = 0
 
     def in_window(self, coord, mouse_pos):
-        """ Vérifie que le curseur de la souris est dans la fenêtre de jeu. """
+        """ Vérifie qu'une coordonnée du curseur de la souris est dans la fenêtre de jeu. """
         pos = self.config.get_board_pos()
         if coord == mouse_pos[0]:
             return pos[0] <= coord <= pos[0] + self.config.window.board_width

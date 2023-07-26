@@ -29,6 +29,10 @@ class Piece:
     def is_queen(self):
         """ Vérifie si une pièce est une dame. """
         return self.name == 'queen'
+    
+    def is_pawn(self):
+        """ Vérifie si une pièce est un pion. """
+        return self.name == 'pawn'
 
     def make_queen(self):
         """ Tranforme une pièce en dame. """
@@ -48,7 +52,7 @@ class Piece:
         self.col = col
 
     def draw_piece(self, window, x, y, square_size):
-        """ Dessine une pièce qui est soit une reine, soit un pion normal """
+        """ Dessine une pièce qui est soit une dame, soit un pion normal """
         piece_to_draw = pygame.transform.scale(self.sprite, (0.80 * square_size, 0.80 * square_size))
         window.blit(piece_to_draw, (x - piece_to_draw.get_width()//2, y - piece_to_draw.get_height()//2))
 
