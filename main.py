@@ -12,23 +12,24 @@ import json, os, sys
 import time
 
 
-# Définir l'ID de l'application (AppUserModelID)
-myappid = u'remi_airiau.jeux.jeu_de_dames.2'  # Chaîne arbitraire
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+if SYSTEM == "Windows":
+    # Définir l'ID de l'application (AppUserModelID)
+    myappid = u'remi_airiau.jeux.jeu_de_dames.2'  # Chaîne arbitraire
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-# Obtenir l'ID de l'application
-lpBuffer = wintypes.LPWSTR()
-AppUserModelID = ctypes.windll.shell32.GetCurrentProcessExplicitAppUserModelID
-AppUserModelID(ctypes.cast(ctypes.byref(lpBuffer), wintypes.LPWSTR))
-appid = lpBuffer.value
-ctypes.windll.kernel32.LocalFree(lpBuffer)
+    # Obtenir l'ID de l'application
+    lpBuffer = wintypes.LPWSTR()
+    AppUserModelID = ctypes.windll.shell32.GetCurrentProcessExplicitAppUserModelID
+    AppUserModelID(ctypes.cast(ctypes.byref(lpBuffer), wintypes.LPWSTR))
+    appid = lpBuffer.value
+    ctypes.windll.kernel32.LocalFree(lpBuffer)
 
-# Afficher l'ID de l'application
-if appid is not None:
-    print(appid)
-    
-screen_position = (0, 30)
-os.environ['SDL_VIDEO_WINDOW_POS'] = str(screen_position[0]) + "," + str(screen_position[1])
+    # Afficher l'ID de l'application
+    if appid is not None:
+        print(appid)
+        
+    screen_position = (0, 30)
+    os.environ['SDL_VIDEO_WINDOW_POS'] = str(screen_position[0]) + "," + str(screen_position[1])
 
 class Main:
     """
@@ -247,7 +248,6 @@ class Main:
             pygame.display.update() 
 
         pygame.quit()
-
 
 main = Main()
 main.mainloop()
