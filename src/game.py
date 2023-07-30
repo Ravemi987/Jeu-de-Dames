@@ -37,23 +37,30 @@ class Game:
         self.game_config = game_config
         self.selected_piece: Piece = None
         self.hovered_square_pos = None
-        self.player_side = "bottom"
-        self.turn = 'white'
-        self.winner = None
-        self.has_start = False
         self.start_time = time.time()
         self.player1_remaining_time = self.player2_remaining_time = self.game_config.game_duration
         self.remaining_time = self.game_config.game_duration
         self.elapsed_time = 0
 
+        self._init_game_state()
         self.board = Board(board_config, self.player_side)
         self.dragger = Dragger(game_config)
         self.hash_key = HashKey(self.board, self.turn, self.player_side)
-        #print(self.hash_key.get_value())
+        print(f"hash: {self.hash_key.get_value()}")
         self.hash_list = [self.hash_key.get_value()]
         self.valid_moves = self.board.get_valid_moves(self.turn)
         self.moves_played: list[Move] = []
         self._init_equivalence_classes()
+
+    def _init_game_state(self):
+        self.player_side = "bottom"
+        self.turn = 'white'
+        self.has_start = False
+        self.winner = None
+        self.win = False
+        self.draw = False
+        self.is_finished = self.win or self.draw
+        self._init_draw_counters()
 
     def _init_windows(self):
         self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
@@ -181,8 +188,6 @@ class Game:
         Change le tour et calcul les déplacements valides
         du joueur auquel le tour vient de passer.
         """
-        print(self.board.pieces_dict)
-
         if self.turn == 'white':
             self.player1_remaining_time = self.remaining_time + self.game_config.bonus_time
             self.remaining_time = self.player2_remaining_time
@@ -211,12 +216,13 @@ class Game:
             # Si le déplacement n'est pas libre, on supprime toutes ces pièces du plateau
             if len(skipped_pieces) > 0:
                 self.board.remove_pieces(skipped_pieces)
+            
             self.moves_played.append(move)
             self.change_turn()
-
             self.hash_key.update(move, self.turn)
             self.hash_list.append(self.hash_key.get_value())
-            #print(self.hash_key.get_value())
+            print(f"hash: {self.hash_key.get_value()}")
+            self.update_game_state()
 
             return True
         return False
@@ -348,10 +354,12 @@ class Game:
         """ Renvoi le gagnant de la partie. """
         if self.board.get_pieces_count('white') == 0 and self.board.get_pieces_count('black') > 0 \
                 or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'white':
-            return 'noir'
+            self.winner = 'noir'
+            return self.winner
         elif self.board.get_pieces_count('black') == 0 and self.board.get_pieces_count('white') > 0 \
                 or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'black':
-            return 'blanc'
+            self.winner = 'blanc'
+            return self.winner
         return None
     
     def check_win(self):
@@ -367,7 +375,6 @@ class Game:
         Si l'on a la même valeurs trois fois côte-à-côte dans la classe dans l'une des classes d'équivalences,
         c'est match nul. 
         """
-        # L'ensemble des classes d'équivalences est l'ensemble quotient
         equivalence_class = self.quotient_set[(len(self.hash_list) - 1)%4]
         hash_key = self.hash_list[len(self.hash_list) - 1]
         equivalence_class.append(hash_key)
@@ -390,7 +397,7 @@ class Game:
                 return True
         return False
 
-    def draw_by_pieces_and_repetition(self):
+    def draw_by_material_and_repetition(self):
         """
         S'il n'y a plus que trois dames, deux dames et un pion, ou une dame et deux pions contre une dame, 
         la fin de partie sera considérée comme égale lorsque les deux joueurs auront encore joué
@@ -398,8 +405,8 @@ class Game:
         """
         if self.board.get_total_pieces_count() == 4:
             player1, player2 = 'white', 'black'
-            player1_pieces = (self.board.get_pieces_count(player1), self.board.get_queens_count(player1))
-            player2_pieces = (self.board.get_pieces_count(player2), self.board.get_queens_count(player2))
+            player1_pieces = (self.board.get_pawns_count(player1), self.board.get_queens_count(player1))
+            player2_pieces = (self.board.get_pawns_count(player2), self.board.get_queens_count(player2))
             cond1 = player1_pieces == (0, 3) and player2_pieces == (0, 1) \
                         or player1_pieces == (0, 1) and player2_pieces == (0, 3)
             cond2 = player1_pieces == (1, 2) and player2_pieces == (0, 1) \
@@ -407,12 +414,13 @@ class Game:
             cond3 = player1_pieces == (2, 1) and player2_pieces == (0, 1) \
                         or player1_pieces == (0, 1) and player2_pieces == (2, 1)
             if cond1 or cond2 or cond3:
-                self.no_move_repetition_counter += 1
-                if self.no_move_repetition_counter >= 16:
+                self.pieces_repetition_counter += 1
+                print(self.pieces_repetition_counter)
+                if self.pieces_repetition_counter >= 16:
                     return True
         return False
 
-    def draw_by_pieces(self):
+    def draw_by_material(self):
         """
         Pour autant qu'il n'y ait pas de phase de jeu en cours, 
         la fin de partie de deux dames contre une dame, et a fortiori, de une dame contre une dame, 
@@ -420,8 +428,8 @@ class Game:
         """
         if self.board.get_total_pieces_count() <= 3:
             player1, player2 = 'white', 'black'
-            player1_pieces = (self.board.get_pieces_count(player1), self.board.get_queens_count(player1))
-            player2_pieces = (self.board.get_pieces_count(player2), self.board.get_queens_count(player2))
+            player1_pieces = (self.board.get_pawns_count(player1), self.board.get_queens_count(player1))
+            player2_pieces = (self.board.get_pawns_count(player2), self.board.get_queens_count(player2))
             cond1 = player1_pieces == (0, 2) and player2_pieces == (0, 1) \
                         or player1_pieces == (0, 1) and player2_pieces == (0, 2)
             cond2 = player1_pieces == player2_pieces == (0, 1)
@@ -431,20 +439,32 @@ class Game:
 
     def check_draw(self):
         """ Vérifie si l'issue de la partie doit être égale. """
-        return self.draw_by_repetition() or self.draw_by_queen_moves_repetition() or \
-                self.draw_by_pieces_and_repetition()
+        if self.draw_by_repetition():
+            return "répétition"
+        elif self.draw_by_queen_moves_repetition():
+            return "jeu passif"
+        elif self.draw_by_material_and_repetition():
+            return "jeu passif avec matériel insuffisant"
+        elif self.draw_by_material():
+            return "matériel insuffisant"
+        else:
+            return False
+    
+    def update_game_state(self):
+        """ Met à jour l'état de la partie. """
+        self.win = self.check_win()
+        self.draw = self.check_draw()
+        self.is_finished = self.win or self.draw
     
     def check_end_game(self):
         """ Vérifie si la partie est terminée. Si oui, affiche l'écran de fin. """
-        win = self.check_win()
-        draw = self.check_draw()
-        if win:
+        if self.win:
             self.dragger.undrag_piece()
             self.show_end_screen(f"Le joueur {self.winner} a gagné la partie !")
             return True
-        elif draw:
+        elif self.draw:
             self.dragger.undrag_piece()
-            self.show_end_screen(f"Egalité !")
+            self.show_end_screen(f"Egalité par {self.draw} !")
             return True
         return False
 

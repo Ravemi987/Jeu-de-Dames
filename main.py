@@ -212,7 +212,7 @@ class Main:
                 if event.type == pygame.QUIT:
                     run = False
                 
-                if not self.game.check_end_game():
+                if not self.game.is_finished:
                     # Clique enfoncé (gauche ou droit)
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         clicked_piece = self.check_ButtonDown(board, dragger)
