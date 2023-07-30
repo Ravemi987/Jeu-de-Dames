@@ -67,8 +67,8 @@ class Config:
             windowed = Screen(1920, 1080, 850, 850, 40)
             fullscreen = Screen(2560, 1440, 1100, 1100, 50)
         else:
-            windowed = Screen(720, 480, 360, 360, 20)   
-            fullscreen = Screen(1280, 720, 640, 640, 30)
+            windowed = Screen(1280, 720, 600, 600, 27)   
+            fullscreen = Screen(1600, 900, 750, 750, 35)
 
         self.windows = [windowed, fullscreen]
 

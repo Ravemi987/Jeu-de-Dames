@@ -353,18 +353,23 @@ class Game:
     def get_winner(self):
         """ Renvoi le gagnant de la partie. """
         if self.board.get_pieces_count('white') == 0 and self.board.get_pieces_count('black') > 0 \
-                or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'white':
+                or len(self.valid_moves) == 0 and self.turn == 'white':
             self.winner = 'noir'
-            return self.winner
         elif self.board.get_pieces_count('black') == 0 and self.board.get_pieces_count('white') > 0 \
-                or (self.remaining_time == 0 or len(self.valid_moves) == 0) and self.turn == 'black':
+                or len(self.valid_moves) == 0 and self.turn == 'black':
+            self.winner = 'white'
+        self.winner = None
+
+    def get_winner_by_time(self):
+        """ Si un joueur gagne au temps, renvoi ce joueur. """
+        if self.remaining_time == 0 and self.turn == 'white':
+            self.winner = 'noir'
+        elif self.remaining_time == 0 and self.turn == 'black':
             self.winner = 'blanc'
-            return self.winner
-        return None
-    
+
     def check_win(self):
         """ Vérifie s'il y a un gagnant. """
-        return self.get_winner() is not None
+        return self.winner is not None
 
     def draw_by_repetition(self):
         """ 
@@ -444,7 +449,7 @@ class Game:
         elif self.draw_by_queen_moves_repetition():
             return "jeu passif"
         elif self.draw_by_material_and_repetition():
-            return "jeu passif avec matériel insuffisant"
+            return "jeu passif / matériel insuffisant"
         elif self.draw_by_material():
             return "matériel insuffisant"
         else:
@@ -452,12 +457,14 @@ class Game:
     
     def update_game_state(self):
         """ Met à jour l'état de la partie. """
-        self.win = self.check_win()
+        self.get_winner()
         self.draw = self.check_draw()
-        self.is_finished = self.win or self.draw
     
     def check_end_game(self):
         """ Vérifie si la partie est terminée. Si oui, affiche l'écran de fin. """
+        self.get_winner_by_time()
+        self.win = self.check_win()
+        self.is_finished = self.win or self.draw
         if self.win:
             self.dragger.undrag_piece()
             self.show_end_screen(f"Le joueur {self.winner} a gagné la partie !")
