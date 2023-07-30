@@ -314,5 +314,101 @@
             "color": "black",
             "name": "queen"
         }
+    },
+    "DrawTest1": {
+        "piece_1": {
+            "row": 0,
+            "col": 7,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_2": {
+            "row": 1,
+            "col": 0,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_3": {
+            "row": 2,
+            "col": 9,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_4": {
+            "row": 4,
+            "col": 9,
+            "color": "black",
+            "name": "queen"
+        },
+        "piece_5": {
+            "row": 5,
+            "col": 0,
+            "color": "white",
+            "name": "queen"
+        }
+    },
+    "DrawTest2": {
+        "piece_1": {
+            "row": 0,
+            "col": 1,
+            "color": "black",
+            "name": "queen"
+        },
+        "piece_2": {
+            "row": 0,
+            "col": 3,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_3": {
+            "row": 0,
+            "col": 7,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_4": {
+            "row": 1,
+            "col": 0,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_5": {
+            "row": 6,
+            "col": 1,
+            "color": "white",
+            "name": "pawn"
+        }
+    },
+    "DrawTest3": {
+        "piece_1": {
+            "row": 0,
+            "col": 1,
+            "color": "black",
+            "name": "queen"
+        },
+        "piece_2": {
+            "row": 0,
+            "col": 3,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_3": {
+            "row": 0,
+            "col": 7,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_4": {
+            "row": 1,
+            "col": 0,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_5": {
+            "row": 6,
+            "col": 1,
+            "color": "white",
+            "name": "queen"
+        }
     }
 }

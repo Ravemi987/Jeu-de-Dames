@@ -1,5 +1,9 @@
 # ======= FICHIER SPECIFIQUE AU JEU =======
 import pygame
+import os, platform
+
+# ==== SYSTEME ====
+SYSTEM = platform.system()
 
 # ==== PLATEAU ====
 ROWS, COLS = 10, 10
@@ -22,6 +26,8 @@ WHITE = (233, 233, 233)
 GREEN = (129, 182, 76)
 
 # ==== DOSSIERS DONNEES ====
-DATA_PATH = "D:\Programmation_Python\Projets\Dames\Jeu-de-Dames\data"
-BOARD_CONFIG_PATH = f"{DATA_PATH}\\board_config.json"
-CMDS_CONFIG_PATH = f"{DATA_PATH}\commands.json"
+SYSTEM_PATH = os.getcwd()
+DATA_PATH = os.path.join(SYSTEM_PATH, "data")
+
+BOARD_CONFIG_PATH = os.path.join(DATA_PATH, "board_config.json")
+CMDS_CONFIG_PATH = os.path.join(DATA_PATH, "commands.json")

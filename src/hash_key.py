@@ -13,6 +13,7 @@ class HashKey:
         self.value = 0
         self.generate()
         self.list_values =  []
+        self.last_move_value = 0
 
     def get_pos_value(self, row, col):
         """ Retourne la valeur de la position"""
@@ -56,8 +57,8 @@ class HashKey:
         is_capture = move.is_capture()
         move_value = self.get_move_value(init_row, init_col, final_row, final_col, is_capture)
         position_value = self.get_pos_value(init_row, init_col) ^ self.get_pos_value(final_row, final_col)
-        #print(move_value, position_value)
-        self.value ^= move_value ^ position_value ^ (PLAYER1 if player_turn == 'white' else PLAYER2)
+        self.value ^= move_value ^ self.last_move_value ^ position_value ^ (PLAYER1 if player_turn == 'white' else PLAYER2)
+        self.last_move_value = move_value
 
     def get_value(self):
         """ Retourne la valeur de la clé de hachage. """
