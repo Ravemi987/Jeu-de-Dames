@@ -2,6 +2,8 @@ from .constants import *
 from .piece import Piece
 from .move import Move
 import json, os
+from copy import deepcopy
+import time
 
 
 class Board:
@@ -11,22 +13,28 @@ class Board:
     ainsi que la dernière pièce déplacée.
     """
 
-    def __init__(self, config, player):
-        self.board = []
+    def __init__(self, config, player_side):
         self.config = config
-        self._init_pieces_dictionary()
+        self.player_side = player_side
+        self.board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+        self.config = config
+        #self._init_pieces_dictionary()
         self.last_move = None
-        self.init_board(config, player)
+
+    def init(self):
+        """ Initialise la matrice du plateau et le dictionnaire des pièces. """
+        self._init_board(self.config, self.player_side)
+        self._init_pieces_dictionary()
 
     def _init_pieces_dictionary(self):
         """ Initialise le dictionnaire contenant le nombre de pions et de dames pour chaque joueur."""
         self.pieces_dict = {
             'white': {
-                'pawn': 20 if self.config == 1 else 0,
+                'pawn': 0,
                 'queen': 0
             },
             'black': {
-                'pawn': 20 if self.config == 1 else 0,
+                'pawn': 0,
                 'queen': 0
             }
         }
@@ -99,7 +107,7 @@ class Board:
 
     def move_piece(self, move: Move):
         """ Déplace une pièce sur le plateau (sans prendre en compte les règles). """
-        piece: Piece = move.get_piece() #self.get_piece(move.initial_pos[0], move.initial_pos[1])
+        piece: Piece = move.get_piece()
         initial_pos, final_pos = move.get_initial_pos(), move.get_final_pos()
 
         # On déplace la pièce
@@ -117,7 +125,7 @@ class Board:
         """ Ajoute une pièce sur le plateau. Par défaut, ce n'est pas une dame. """
         piece = Piece(row, col, color, name, side)
         self.board[row][col] = piece
-        self.pieces_dict[piece.color][piece.name] += 1
+        #self.pieces_dict[piece.color][piece.name] += 1
         
     def remove_pieces(self, skipped_pieces):
         """ 
@@ -197,7 +205,7 @@ class Board:
                                          possible_directions, piece.row, piece.col))
         
         valid_moves = self._clean_possible_moves(possible_moves)
-        #self.print_valid_moves(valid_moves)
+        #self.print_valid_moves(possible_moves)
         
         return valid_moves
 
@@ -237,16 +245,31 @@ class Board:
                 target_row, target_col = updated_coords
                 new_target_row, new_target_col = target_row + dx, target_col + dy
                 
-                if self.is_in_range_and_empty(new_target_row, new_target_col) and (new_target_row, new_target_col) != start_position:
+                if self.is_in_range_and_empty(new_target_row, new_target_col) and (new_target_row, new_target_col) != start_position \
+                        and (target_row, target_col) not in skipped_list:
                     # On met à jour la dernière direction parcourue et la liste des pièces capturées.
                     new_last_dir = current_direction
                     skipped = skipped_list + [(target_row, target_col)]
-                    # On ajoute le nouveau déplacement et on appelle la fonction récursivement
-                    piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (new_target_row, new_target_col), skipped))
-                    piece_moves.extend(self._get_piece_moves(player_turn, piece, start_position, new_last_dir, skipped,
-                                                     possible_directions, new_target_row, new_target_col))
+                    # On ajoute les nouveaux déplacements et on appelle la méthode récursivement
+                    self._add_moves(piece_moves, dx, dy, player_turn, piece, new_target_row, new_target_col, 
+                                        start_position, new_last_dir, skipped, possible_directions)
+
         return piece_moves
-    
+
+    def _add_moves(self, piece_moves: list[Move], dx, dy, player_turn, piece: Piece, new_target_row, new_target_col, 
+                        start_position, new_last_dir, skipped, possible_directions):
+        """ Ajoute les déplacements possibles et appelle la méthode get_piece_moves()"""
+        if piece.is_queen():
+            while self.is_in_range_and_empty(new_target_row, new_target_col) and (new_target_row, new_target_col) != start_position:
+                piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (new_target_row, new_target_col), skipped))
+                piece_moves.extend(self._get_piece_moves(player_turn, piece, start_position, new_last_dir, skipped,
+                                            possible_directions, new_target_row, new_target_col))
+                new_target_row += dx; new_target_col += dy
+        else:
+            piece_moves.append(Move(player_turn, piece, (piece.row, piece.col), (new_target_row, new_target_col), skipped))
+            piece_moves.extend(self._get_piece_moves(player_turn, piece, start_position, new_last_dir, skipped,
+                                            possible_directions, new_target_row, new_target_col))
+
     def _check_diagonal_squares(self, dx, dy, row, col, append_empty_squares=False):
         """
         A partir d'une position de départ (row, col), vérifie le contenu de toutes les cases
@@ -260,8 +283,7 @@ class Board:
         while self.is_in_range_and_empty(move_row, move_col):
             if append_empty_squares:
                 squares_list.append((move_row, move_col))
-            move_row += dx
-            move_col += dy
+            move_row += dx; move_col += dy
         if append_empty_squares:
             return move_row, move_col, squares_list
         return move_row, move_col
@@ -307,33 +329,31 @@ class Board:
     def _init_empty_board(self):
         """ Créé un plateau 'vide' dont les cases vides sont représentées par 0. """
         for row in range(ROWS):
-            self.board.append([])
-            for _ in range(COLS):
-                self.board[row].append(0)
+            for col in range(COLS):
+                self.board[row][col] = 0
 
     def _init_starting_board(self, player_side):
         """ Créé le plateau de départ des jeux de dames, 20 pions dans chaque équipe. """
         for row in range(ROWS):
-            self.board.append([])
             for col in range(COLS):
                 # Les pièces sont uniquement sur les cases foncées
                 if col % 2 == ((row + 1) % 2):
                     if row < 4:
                         if player_side == "bottom":
-                            self.board[row].append(Piece(row, col, 'black', side=player_side)) 
+                            self.board[row][col] = Piece(row, col, 'black', side=player_side) 
                         else:
-                            self.board[row].append(Piece(row, col, 'white', side=player_side))
+                            self.board[row][col] = Piece(row, col, 'white', side=player_side)
                     elif row > 5:
                         if player_side == "bottom":
-                            self.board[row].append(Piece(row, col, 'white', side=player_side))  
+                            self.board[row][col] = Piece(row, col, 'white', side=player_side)  
                         else:
-                            self.board[row].append(Piece(row, col, 'black', side=player_side))
+                            self.board[row][col] = Piece(row, col, 'black', side=player_side)
                     else:
                         # 0 est la case vide
-                        self.board[row].append(0)
+                        self.board[row][col] = 0
                 else:
                     # Les cases claires sont forcément vides
-                    self.board[row].append(0)
+                    self.board[row][col] = 0
 
     def save_board_config(self, config_name): 
         """ 
@@ -385,7 +405,7 @@ class Board:
             
             self._add_piece(row, col, color, name, player_side)
 
-    def init_board(self, config, player_side):
+    def _init_board(self, config, player_side):
         """ Charge la configuration de plateau de numéro 'config' à partir du fichier json. """
         with open(BOARD_CONFIG_PATH, "r", encoding='UTF-8') as f:
             data = json.load(f)
@@ -401,3 +421,15 @@ class Board:
         else:
             print("Configuration non trouvée.")
             self._init_empty_board()
+
+    def copy(self):
+        """ Copie une instance de la classe Board. """
+        board_copy = Board(self.config, self.player_side)
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.board[row][col] == 0:
+                    board_copy.board[row][col] = 0
+                else:
+                    board_copy.board[row][col] = self.board[row][col].copy()
+        board_copy.pieces_dict = deepcopy(self.pieces_dict)
+        return board_copy

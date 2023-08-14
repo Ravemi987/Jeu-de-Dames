@@ -1,0 +1,11 @@
+Séparer l'interface graphique des élements du jeu
+pour la copie.
+
+Régler le bug de l'ia qui essaye de jouer après la fin
+de la partie.
+
+Rendre possible l'utilisation de plusieurs IA.
+
+Simplifer le code.
+
+Cleint-Serveur

@@ -3,5 +3,7 @@
     "quit": "self.game.quit_game",
     "load_config": "self.game.reset",
     "help_cmds": "self.print_commands",
-    "help_configs": "self.print_configs"
+    "help_configs": "self.print_configs",
+    "set_clock": "self.config.set_game_duration",
+    "set_incr": "self.config.set_time_increment"
 }

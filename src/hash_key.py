@@ -5,6 +5,11 @@ from .constants import *
 from .hash_values import *
 
 class HashKey:
+    """
+    Génère et actualise une clé de hachage
+    unique à chaque position et qui permet de détecter les match nuls
+    en ne parcourant le plateau qu'une seule fois.
+    """
     
     def __init__(self, starting_board: Board, turn, white_side):
         self.board = starting_board
@@ -12,7 +17,6 @@ class HashKey:
         self.side = white_side
         self.value = 0
         self.generate()
-        self.list_values =  []
         self.last_move_value = 0
 
     def get_pos_value(self, row, col):
@@ -63,6 +67,13 @@ class HashKey:
     def get_value(self):
         """ Retourne la valeur de la clé de hachage. """
         return self.value
+
+    def copy(self):
+        """ Copie une instance de la classe HashKey. """
+        hash_copy = HashKey(self.board, self.turn, self.side)
+        hash_copy.value = self.value
+        hash_copy.last_move_value = self.last_move_value
+        return hash_copy
 
     def __repr__(self):
         return f"{self.value}"

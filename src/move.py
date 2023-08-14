@@ -45,6 +45,12 @@ class Move:
         """ Vérifie si un pion est déplacé. """
         return self.piece.name == 'pawn'
 
+    def copy(self):
+        """ Copie une instance de la classe Move. """
+        move_copy = Move(self.turn, self.piece.copy(), self.initial_pos,
+            self.final_pos, self.skipped_list)
+        return move_copy
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Move):
             return self.initial_pos == other.initial_pos and self.final_pos == other.final_pos

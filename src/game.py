@@ -9,6 +9,7 @@ from .move import Move
 from .piece import Piece
 from .hash_key import HashKey
 from .constants import *
+from copy import copy, deepcopy
 import sys, time
 
 
@@ -23,17 +24,16 @@ class Game:
         - le tour du joueur qui commence (turn)
         - la liste des déplacements valides (valid_moves)
 
-    Gère l'affichage, les déplacements, la fin de partie.
+    Gère l'affichage, les déplacements, la fin de partie avec les match nuls.
     """
     
     def __init__(self, game_config: Config, board_config):
+        self.board_config = board_config
         self._init(game_config, board_config)
-        self._init_windows()
-        self.clock1 = Clock(self.game_config, self.screen, 'white', self.game_config.game_duration, self.player_side)
-        self.clock2 =  Clock(self.game_config, self.screen, 'black', self.game_config.game_duration, self.player_side)
 
     # Méthode privée
     def _init(self, game_config: Config, board_config):
+        """ Initialise les attributs principaux. """
         self.game_config = game_config
         self.selected_piece: Piece = None
         self.hovered_square_pos = None
@@ -46,13 +46,12 @@ class Game:
         self.board = Board(board_config, self.player_side)
         self.dragger = Dragger(game_config)
         self.hash_key = HashKey(self.board, self.turn, self.player_side)
-        print(f"hash: {self.hash_key.get_value()}")
         self.hash_list = [self.hash_key.get_value()]
-        self.valid_moves = self.board.get_valid_moves(self.turn)
         self.moves_played: list[Move] = []
         self._init_equivalence_classes()
 
     def _init_game_state(self):
+        """ Initialise les attributs relatifs à l'état de la partie. """
         self.player_side = "bottom"
         self.turn = 'white'
         self.has_start = False
@@ -62,12 +61,18 @@ class Game:
         self.is_finished = self.win or self.draw
         self._init_draw_counters()
 
+    def _init_clocks(self):
+        """ Initialise les horloges de jeu. """
+        self.clock1 = Clock(self.game_config, self.screen, 'white', self.game_config.game_duration, self.player_side)
+        self.clock2 =  Clock(self.game_config, self.screen, 'black', self.game_config.game_duration, self.player_side)
+
     def _init_windows(self):
+        """ Initialise les attributs graphiques. """
         self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
         self.screen.set_alpha(self.game_config.transparency)
         self.board_window = pygame.Surface([self.game_config.window.board_width, self.game_config.window.board_height], pygame.SRCALPHA)
         self.board_window.set_alpha(self.game_config.transparency)
-    
+
     def _init_equivalence_classes(self):
         """ Initialise les piles qui sont les classes d'équivalence de la congruence modulo 4. """
          # Classes d'équivalences de représentants [0, 1, 2, 3]
@@ -75,8 +80,26 @@ class Game:
         self.quotient_set = [self.eqc_0, self.eqc_1, self.eqc_2, self.eqc_4]
 
     def _init_draw_counters(self):
+        """ Initialise les compteurs pour les istuations de nuls. """
         self.no_move_repetition_counter = 0
         self.pieces_repetition_counter  = 0
+
+    def init(self):
+        """" 
+        Initialise la partie principale.
+        cette méthode n'est appelée que pour lancer la partie dans le main.
+        Elle est là pour optimiser la créations des copies nécessaires pour l'IA.
+        """
+        self._init_windows()
+        self._init_clocks()
+        self.board.init()
+        self.valid_moves = self.board.get_valid_moves(self.turn)
+
+    @staticmethod
+    def get_opposite_color(color):
+        if color == 'white':
+            return 'black'
+        return 'white'
 
     def get_remaining_time(self):
         """ Retourne le temps de jeu restant pour le joueur courant. """
@@ -189,18 +212,35 @@ class Game:
         du joueur auquel le tour vient de passer.
         """
         if self.turn == 'white':
-            self.player1_remaining_time = self.remaining_time + self.game_config.bonus_time
+            self.player1_remaining_time = self.remaining_time + self.game_config.increment
             self.remaining_time = self.player2_remaining_time
             self.turn = 'black'
         else:
-            self.player2_remaining_time = self.remaining_time + self.game_config.bonus_time
+            self.player2_remaining_time = self.remaining_time + self.game_config.increment
             self.remaining_time = self.player1_remaining_time
             self.turn = 'white'
 
         self.start_time = time.time()
         self.valid_moves = self.board.get_valid_moves(self.turn)
+        self.selected_piece = None
 
-    def move(self, row, col):
+    def apply_move(self, move: Move):
+        # On déplace la pièce selectionnée
+        self.board.move_piece(move)
+        # On récupère la liste des pièces capturées par ce déplacement.
+        skipped_pieces = move.get_skipped_list()
+        # Si le déplacement n'est pas libre, on supprime toutes ces pièces du plateau
+        self.moves_played.append(move)
+        if len(skipped_pieces) > 0:
+            self.board.remove_pieces(skipped_pieces)
+        self.change_turn()
+        # On met à jour la clé de hachage
+        self.hash_key.update(move, self.turn)
+        self.hash_list.append(self.hash_key.get_value())
+        # On vérifie l'état de la partie
+        self.update_game_state()
+
+    def human_move(self, row, col):
         """ 
         Déplace une pièce sur le plateau (en prenant en compte les règles).
         Comme on essaye de déplacer une pièce seulement si elle a pu être selectionnée,
@@ -209,21 +249,7 @@ class Game:
         selected_coords = (self.selected_piece.row, self.selected_piece.col)
         move = self.get_move(selected_coords, (row, col))
         if move is not None:
-            # On déplace la pièce selectionnée
-            self.board.move_piece(move)
-            # On récupère la liste des pièces capturées par ce déplacement.
-            skipped_pieces = move.get_skipped_list()
-            # Si le déplacement n'est pas libre, on supprime toutes ces pièces du plateau
-            if len(skipped_pieces) > 0:
-                self.board.remove_pieces(skipped_pieces)
-            
-            self.moves_played.append(move)
-            self.change_turn()
-            self.hash_key.update(move, self.turn)
-            self.hash_list.append(self.hash_key.get_value())
-            print(f"hash: {self.hash_key.get_value()}")
-            self.update_game_state()
-
+            self.apply_move(move)
             return True
         return False
     
@@ -261,6 +287,7 @@ class Game:
             selected_coords = (self.selected_piece.row, self.selected_piece.col)
             color = theme.valid_moves_color
             radius = square_size // 2 - self.game_config.window.padding
+            
             for move in self.valid_moves:
                 if move.get_initial_pos() == selected_coords:
                     final_pos = move.get_final_pos()
@@ -315,7 +342,7 @@ class Game:
         self.clock1.update()
         self.clock2.update()
 
-    def show_end_screen(self, text):
+    def show_end_screen(self, text: str):
         """ Affiche l'écran de fin. """
         board_origin = self.game_config.get_board_pos()
 
@@ -341,9 +368,16 @@ class Game:
 
         end_screen = pygame.Surface([end_screen_width, end_screen_height], pygame.SRCALPHA)
         pygame.draw.rect(end_screen, BG, (0, 0, end_screen_width, end_screen_height), border_radius=15)
-        screen_text_surface = self.game_config.text_font.render(text, True, (255, 255, 255))
         
-        end_screen.blit(screen_text_surface, [(end_screen_width - screen_text_surface.get_width()) // 2, end_screen_height // 4])
+        text_lines = text.split('\n')
+        for i in range(len(text_lines)):
+            screen_text_surface = self.game_config.text_font.render(text_lines[i], True, (255, 255, 255))
+            if i > 0:
+                end_screen.blit(screen_text_surface, [(end_screen_width - screen_text_surface.get_width()) // 2,
+                    end_screen_height // 4 + screen_text_surface.get_height()])
+            else:
+                end_screen.blit(screen_text_surface, [(end_screen_width - screen_text_surface.get_width()) // 2, end_screen_height // 4])
+        
         self.screen.blit(end_screen, [end_screen_center_x, end_screen_center_y])
         restart_button.show()
 
@@ -357,8 +391,7 @@ class Game:
             self.winner = 'noir'
         elif self.board.get_pieces_count('black') == 0 and self.board.get_pieces_count('white') > 0 \
                 or len(self.valid_moves) == 0 and self.turn == 'black':
-            self.winner = 'white'
-        self.winner = None
+            self.winner = 'blanc'
 
     def get_winner_by_time(self):
         """ Si un joueur gagne au temps, renvoi ce joueur. """
@@ -471,7 +504,7 @@ class Game:
             return True
         elif self.draw:
             self.dragger.undrag_piece()
-            self.show_end_screen(f"Egalité par {self.draw} !")
+            self.show_end_screen(f"Egalité par \n{self.draw} !")
             return True
         return False
 
@@ -479,3 +512,24 @@ class Game:
         """ Permet de quitter le jeu. """
         pygame.quit()
         sys.exit()
+
+    def copy(self):
+        """ Copie une instance de la classe Game. """
+        # Liste des noms d'attributs à copier
+        attribute_names = ['board_config', 'player_side','selected_piece', 'turn', 'quotient_set', 'no_move_repetition_counter',
+                           'pieces_repetition_counter', 'has_start', 'winner', 'win', 'draw', 'is_finished']
+
+        game_copy = Game(self.game_config, self.board_config)
+        
+        # Copie des attributs simples
+        for attr_name in attribute_names:
+            setattr(game_copy, attr_name, copy(getattr(self, attr_name)))
+        
+        # Copie des attributs spéciaux
+        game_copy.board = self.board.copy()
+        game_copy.hash_key = self.hash_key.copy()
+        game_copy.hash_list = deepcopy(self.hash_list)
+        game_copy.valid_moves = [move.copy() for move in self.valid_moves]
+        game_copy.moves_played = [move.copy() for move in self.moves_played]
+        
+        return game_copy

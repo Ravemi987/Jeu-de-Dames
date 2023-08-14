@@ -410,5 +410,169 @@
             "color": "white",
             "name": "queen"
         }
+    },
+    "QueenTest": {
+        "piece_1": {
+            "row": 0,
+            "col": 1,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_2": {
+            "row": 0,
+            "col": 3,
+            "color": "white",
+            "name": "queen"
+        },
+        "piece_3": {
+            "row": 0,
+            "col": 5,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_4": {
+            "row": 0,
+            "col": 7,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_5": {
+            "row": 0,
+            "col": 9,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_6": {
+            "row": 1,
+            "col": 6,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_7": {
+            "row": 2,
+            "col": 5,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_8": {
+            "row": 2,
+            "col": 7,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_9": {
+            "row": 2,
+            "col": 9,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_10": {
+            "row": 3,
+            "col": 0,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_11": {
+            "row": 3,
+            "col": 8,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_12": {
+            "row": 4,
+            "col": 5,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_13": {
+            "row": 5,
+            "col": 2,
+            "color": "black",
+            "name": "pawn"
+        },
+        "piece_14": {
+            "row": 6,
+            "col": 7,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_15": {
+            "row": 6,
+            "col": 9,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_16": {
+            "row": 7,
+            "col": 0,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_17": {
+            "row": 7,
+            "col": 4,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_18": {
+            "row": 7,
+            "col": 6,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_19": {
+            "row": 7,
+            "col": 8,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_20": {
+            "row": 8,
+            "col": 1,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_21": {
+            "row": 8,
+            "col": 3,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_22": {
+            "row": 8,
+            "col": 7,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_23": {
+            "row": 8,
+            "col": 9,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_24": {
+            "row": 9,
+            "col": 0,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_25": {
+            "row": 9,
+            "col": 4,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_26": {
+            "row": 9,
+            "col": 6,
+            "color": "white",
+            "name": "pawn"
+        },
+        "piece_27": {
+            "row": 9,
+            "col": 8,
+            "color": "white",
+            "name": "pawn"
+        }
     }
 }

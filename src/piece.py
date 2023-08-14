@@ -9,13 +9,15 @@ class Piece:
     une position sur l'écran (x, y.)
     """
     
-    def __init__(self, row, col, color, name='pawn', side="bottom", sprite=None):
+    def __init__(self, row, col, color, name='pawn', side="bottom", sprite=None, copy=False):
         self.row = row
         self.col = col
         self.color = color
         self.name = name
+        self.side = side
         self.sprite = sprite
-        self.set_sprite()
+        if not copy:
+            self.set_sprite()
 
         if self.color == 'white':
             self.direction, self.last_row = (-1, 0) if side == "bottom" else (1, ROWS - 1)
@@ -55,6 +57,12 @@ class Piece:
         """ Dessine une pièce qui est soit une dame, soit un pion normal """
         piece_to_draw = pygame.transform.scale(self.sprite, (0.80 * square_size, 0.80 * square_size))
         window.blit(piece_to_draw, (x - piece_to_draw.get_width()//2, y - piece_to_draw.get_height()//2))
+
+    def copy(self):
+        """ Copy une instance de la classe Piece. """
+        piece_copy = Piece(self.row, self.col, self.color, 
+            self.name, self.side, None, True)
+        return piece_copy
 
     def __eq__(self, other):
         if isinstance(other, Piece):

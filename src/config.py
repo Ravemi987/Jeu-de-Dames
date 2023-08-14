@@ -30,7 +30,9 @@ class Config:
         self.fps = 120
         self.transparency = 255
         self.game_duration = 300
-        self.bonus_time = 0
+        self.increment = 5
+        self.gamemode = "self.player_vs_ai"
+        self.ai_color = 'black'
 
     def change_theme(self):
         """ Change le thème. """
@@ -103,3 +105,11 @@ class Config:
     def get_buttons_list(self) -> list[Button]:
         """ Renvoie la liste des boutons. """
         return self.buttons_list
+
+    def set_game_duration(self, duration=600):
+        """ Met à jour la durée de l'horloge. """
+        self.game_duration = duration
+
+    def set_time_increment(self, time=2):
+        """ Modifie le temp rajouté à chaque joueur au début de sont tour. """
+        self.increment = time
