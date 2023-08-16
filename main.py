@@ -12,7 +12,7 @@ from ctypes import wintypes
 import json, os, sys
 import time
 
-from communication.client import Client
+from client import Client
 
 from ai_package.ai import AI
 from ai_package import random_ai
@@ -52,11 +52,10 @@ class Main:
         pygame.display.set_caption('Jeu de Dames')
         self.config = Config()
         self.game = Game(self.config, 1)
-        self.game.init()
+        #self.game.init()
 
         self.client = Client()
         self.command_queue = Queue()
-        self.ia_moves_queue = Queue()
         self.mouse_pos = (0, 0)
         self.previously_selected_piece = None
         self.clicked_piece = None
@@ -68,9 +67,9 @@ class Main:
 
     def _create_ai(self):
         """ Créé plusieurs instances de la classe AI. """
-        self.random_ai = AI(random_ai.random_ai, 'black', self.game)
-        self.minimax_ai = AI(minimax.MiniMax_Max, 'black', self.game)
-        self.alphabeta_ai = AI(alphabeta.AlphaBeta, 'black', self.game)
+        self.random_ai = AI(random_ai.random_ai, 'black')
+        self.minimax_ai = AI(minimax.MiniMax_Max, 'black')
+        self.alphabeta_ai = AI(alphabeta.AlphaBeta, 'black')
         self.ai = self.alphabeta_ai
     
     def check_command(self, user_input):
@@ -139,9 +138,10 @@ class Main:
             if self.ai.color == self.game.turn and not self.game.is_finished:
                 if len(self.game.valid_moves) == 1:
                     best_move = self.game.valid_moves[0]
-                    self.ai.move(best_move)
+                    self.ai.move(self.game, best_move)
                 else:
-                    self.client.round_trip([self.ai.engine, self.game.copy(), 5, float('-inf'), float('+inf'), True])
+                    game_copy = self.game.copy()
+                    self.client.send(game_copy)
 
     def create_command_thread(self):
         """ Thread pour les commandes. """
@@ -321,11 +321,8 @@ class Main:
             if not self.client.data_queue.empty():
                 best_move: Move = self.client.get_data()[1]
                 best_move.piece.set_sprite()
-                self.ai.move(best_move)
-            # if not self.ia_moves_queue.empty():
-            #     best_move = self.ia_moves_queue.get()
-            #     self.ai.move(best_move)
-
+                self.ai.move(self.game, best_move)
+            
             board, dragger = self.check_ButtonClick(board, dragger)
 
             pygame.display.update() 

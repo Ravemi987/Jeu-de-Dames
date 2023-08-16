@@ -13,17 +13,16 @@ class AI:
     game : instance 'game' de la classe Main
     """
     
-    def __init__(self, engine, color, game: Game):
+    def __init__(self, engine, color):
         self.engine = engine
         self.color = color
-        self.game = game
 
-    def move(self, move: Move):
+    def move(self, game: Game, move: Move):
         """ 
         Joue le move passé en paramètre en appelant
         la méthode apply_move de la classe game
         """
-        self.game.apply_move(move)
+        game.apply_move(move)
 
     @staticmethod
     def simulate_move(move: Move, game: Game):

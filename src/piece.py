@@ -9,13 +9,12 @@ class Piece:
     une position sur l'écran (x, y.)
     """
     
-    def __init__(self, row, col, color, name='pawn', side="bottom", sprite=None, copy=False):
+    def __init__(self, row, col, color, name='pawn', side="bottom", copy=False):
         self.row = row
         self.col = col
         self.color = color
         self.name = name
         self.side = side
-        self.sprite = sprite
         if not copy:
             self.set_sprite()
 
@@ -61,7 +60,7 @@ class Piece:
     def copy(self):
         """ Copy une instance de la classe Piece. """
         piece_copy = Piece(self.row, self.col, self.color, 
-            self.name, self.side, None, True)
+            self.name, self.side, True)
         return piece_copy
 
     def __eq__(self, other):

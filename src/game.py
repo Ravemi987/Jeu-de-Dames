@@ -27,9 +27,12 @@ class Game:
     Gère l'affichage, les déplacements, la fin de partie avec les match nuls.
     """
     
-    def __init__(self, game_config: Config, board_config):
+    def __init__(self, game_config: Config, board_config, copy=False):
         self.board_config = board_config
         self._init(game_config, board_config)
+        
+        if not copy:
+            self.init()
 
     # Méthode privée
     def _init(self, game_config: Config, board_config):
@@ -519,7 +522,7 @@ class Game:
         attribute_names = ['board_config', 'player_side','selected_piece', 'turn', 'quotient_set', 'no_move_repetition_counter',
                            'pieces_repetition_counter', 'has_start', 'winner', 'win', 'draw', 'is_finished']
 
-        game_copy = Game(self.game_config, self.board_config)
+        game_copy = Game(Config(copy=True), self.board_config, copy=True)
         
         # Copie des attributs simples
         for attr_name in attribute_names:
@@ -527,7 +530,7 @@ class Game:
         
         # Copie des attributs spéciaux
         game_copy.board = self.board.copy()
-        game_copy.hash_key = self.hash_key.copy()
+        game_copy.hash_key = self.hash_key.copy(game_copy.board)
         game_copy.hash_list = deepcopy(self.hash_list)
         game_copy.valid_moves = [move.copy() for move in self.valid_moves]
         game_copy.moves_played = [move.copy() for move in self.moves_played]

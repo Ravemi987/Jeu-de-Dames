@@ -18,7 +18,6 @@ class Board:
         self.player_side = player_side
         self.board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
         self.config = config
-        #self._init_pieces_dictionary()
         self.last_move = None
 
     def init(self):

@@ -68,9 +68,9 @@ class HashKey:
         """ Retourne la valeur de la clé de hachage. """
         return self.value
 
-    def copy(self):
+    def copy(self, board):
         """ Copie une instance de la classe HashKey. """
-        hash_copy = HashKey(self.board, self.turn, self.side)
+        hash_copy = HashKey(board, self.turn, self.side)
         hash_copy.value = self.value
         hash_copy.last_move_value = self.last_move_value
         return hash_copy

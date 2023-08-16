@@ -15,17 +15,10 @@ class Config:
         - la clock (durée maximum et bonus de temps)
     """
     
-    def __init__(self):
-        pygame.font.init()
+    def __init__(self, copy=False):
+        
         self.themes, self.windows = [], []
         self.buttons_list = []
-        self._add_themes()
-        self._add_windows()
-        self.theme_index, self.window_index = 0, 0
-        self.theme = self.themes[self.theme_index]
-        self.window = self.windows[self.window_index]
-        self.digital_font = pygame.font.Font("assets/digital-7.regular.ttf", self.window.digital_font_size)
-        self.text_font = pygame.font.Font("assets/recharge.rg-bold.otf", self.window.text_font_size)
         self.board_pos = (0, 0)
         self.fps = 120
         self.transparency = 255
@@ -33,6 +26,22 @@ class Config:
         self.increment = 5
         self.gamemode = "self.player_vs_ai"
         self.ai_color = 'black'
+
+        if not copy:
+            self.init()
+
+    def init(self):
+        self._add_themes()
+        self._add_windows()
+        self.theme_index, self.window_index = 0, 0
+        self.theme = self.themes[self.theme_index]
+        self.window = self.windows[self.window_index]
+        pygame.font.init()
+        self.set_font()
+
+    def set_font(self):
+        self.digital_font = pygame.font.Font("assets/digital-7.regular.ttf", self.window.digital_font_size)
+        self.text_font = pygame.font.Font("assets/recharge.rg-bold.otf", self.window.text_font_size)
 
     def change_theme(self):
         """ Change le thème. """
