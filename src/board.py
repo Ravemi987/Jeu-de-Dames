@@ -3,7 +3,6 @@ from .piece import Piece
 from .move import Move
 import json, os
 from copy import deepcopy
-import time
 
 
 class Board:
@@ -45,21 +44,17 @@ class Board:
             for piece in self.get_team_pieces(color):
                 self.pieces_dict[piece.color][piece.name] += 1
     
-    def get_queens_count(self, color):
-        """ Retourne le nombre de dames du joueur qui a la couleur 'color'. """
+    def get_number_of_queens(self, color):
         return self.pieces_dict[color]['queen']
     
-    def get_pawns_count(self, color):
-        """ Retourne le nombre de pions du joueur qui a la couleur 'color'. """
+    def get_number_of_pawns(self, color):
         return self.pieces_dict[color]['pawn']
     
-    def get_pieces_count(self, color):
-        """ Retourne le nombre de pièces du joueur qui a la couleur 'color'. """
+    def get_number_of_pieces(self, color):
         return self.pieces_dict[color]['queen'] + self.pieces_dict[color]['pawn']
     
-    def get_total_pieces_count(self):
-        """ Retourne le nombre total de pièces sur le plateau. """
-        return self.get_pieces_count('white') + self.get_pieces_count('black')
+    def get_total_number_of_pieces(self):
+        return self.get_number_of_pieces('white') + self.get_number_of_pieces('black')
 
     def get_piece(self, row, col) -> Piece:
         """ 
@@ -69,7 +64,6 @@ class Board:
         return self.board[row][col]
     
     def is_empty_square(self, row, col):
-        """ Vérifie si une case du plateau est vide, c'est-à-dire ne contient pas d'objets Piece. """
         return self.board[row][col] == 0
 
     @staticmethod
@@ -88,20 +82,29 @@ class Board:
         """
         team_pieces_list: list[Piece] = []
         for row in range(len(self.board)):
-            for col in range(len(self.board)):
-                if not(self.is_empty_square(row, col)) and self.board[row][col].color == color:
-                    piece = self.get_piece(row, col)
-                    team_pieces_list.append(piece)
-
+            team_pieces_list.extend(self.get_team_pieces_on_row(color, row))
         return team_pieces_list
+
+    def get_team_pieces_on_row(self, color, row):
+        pieces_list = []
+        for col in range(len(self.board)):
+            if not(self.is_empty_square(row, col)) and self.board[row][col].color == color:
+                piece = self.get_piece(row, col)
+                pieces_list.append(piece)
+        return pieces_list
     
     def get_all_pieces(self) -> list[Piece]:
         """ Renvoi sous forme de liste la totalité des pions du plateau """
         pieces_list: list[Piece] = []
         for row in range(len(self.board)):
-            for col in range(len(self.board)):
-                if not(self.is_empty_square(row, col)):
-                    pieces_list.append(self.get_piece(row, col))
+            pieces_list.extend(self.get_all_pieces_on_row(row))
+        return pieces_list
+
+    def get_all_pieces_on_row(self, row):
+        pieces_list = []
+        for col in range(len(self.board)):
+            if not(self.is_empty_square(row, col)):
+                pieces_list.append(self.get_piece(row, col))
         return pieces_list
 
     def move_piece(self, move: Move):
@@ -109,22 +112,18 @@ class Board:
         piece: Piece = move.get_piece()
         initial_pos, final_pos = move.get_initial_pos(), move.get_final_pos()
 
-        # On déplace la pièce
         self.board[initial_pos[0]][initial_pos[1]] = 0
         self.board[final_pos[0]][final_pos[1]] = piece
         
-        # On sauvegarde le dernier déplacement
         self.last_move = move
 
-        # On actualise la position de la pièce et on vérifie si elle doit devenir une dame
         piece.update_pos(final_pos[0], final_pos[1])
         piece.check_promotion()
     
     def _add_piece(self, row, col, color, name, side):
-        """ Ajoute une pièce sur le plateau. Par défaut, ce n'est pas une dame. """
         piece = Piece(row, col, color, name, side)
         self.board[row][col] = piece
-        #self.pieces_dict[piece.color][piece.name] += 1
+        #self.pieces_dict[piece.color][piece.name] += 1 ??????
         
     def remove_pieces(self, skipped_pieces):
         """ 
@@ -139,7 +138,6 @@ class Board:
 
     @staticmethod
     def print_valid_moves(valid_moves):
-        """ Méthode utilitaire pour visualiser les déplacements valides. """
         for move in valid_moves:
             print(move)
         print('\n')
@@ -331,25 +329,28 @@ class Board:
             for col in range(COLS):
                 self.board[row][col] = 0
 
+    def _add_initial_pieces(self, row, col, player_side):
+        if row < 4:
+            if player_side == "bottom":
+                self.board[row][col] = Piece(row, col, 'black', side=player_side) 
+            else:
+                self.board[row][col] = Piece(row, col, 'white', side=player_side)
+        elif row > 5:
+            if player_side == "bottom":
+                self.board[row][col] = Piece(row, col, 'white', side=player_side)  
+            else:
+                self.board[row][col] = Piece(row, col, 'black', side=player_side)
+        else:
+            # 0 est la case vide
+            self.board[row][col] = 0
+
     def _init_starting_board(self, player_side):
         """ Créé le plateau de départ des jeux de dames, 20 pions dans chaque équipe. """
         for row in range(ROWS):
             for col in range(COLS):
                 # Les pièces sont uniquement sur les cases foncées
                 if col % 2 == ((row + 1) % 2):
-                    if row < 4:
-                        if player_side == "bottom":
-                            self.board[row][col] = Piece(row, col, 'black', side=player_side) 
-                        else:
-                            self.board[row][col] = Piece(row, col, 'white', side=player_side)
-                    elif row > 5:
-                        if player_side == "bottom":
-                            self.board[row][col] = Piece(row, col, 'white', side=player_side)  
-                        else:
-                            self.board[row][col] = Piece(row, col, 'black', side=player_side)
-                    else:
-                        # 0 est la case vide
-                        self.board[row][col] = 0
+                    self._add_initial_pieces(row, col, player_side)
                 else:
                     # Les cases claires sont forcément vides
                     self.board[row][col] = 0

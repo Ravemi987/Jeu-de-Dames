@@ -215,7 +215,7 @@ class Main:
                 self.game.start_time = time.time()
         else:
             if self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
-                can_move = self.game.human_move(clicked_row, clicked_col)
+                can_move = self.game.check_human_move(clicked_row, clicked_col)
                 if not can_move:
                     self.game.unselect_piece()
             else:
@@ -241,7 +241,7 @@ class Main:
                 and clicked_piece == previously_selected_piece:
             self.game.unselect_piece()
         elif self.game.selected_piece is not None and self.game.selected_piece.color == self.game.turn:
-            self.game.human_move(released_row, released_col)
+            self.game.check_human_move(released_row, released_col)
         
         dragger.undrag_piece()
         previously_selected_piece = self.game.selected_piece

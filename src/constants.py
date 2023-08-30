@@ -27,7 +27,10 @@ GREEN = (129, 182, 76)
 
 # ==== DOSSIERS DONNEES ====
 SYSTEM_PATH = os.getcwd()
+AI_PACKAGE_PATH = os.path.join(SYSTEM_PATH, "ai_package")
 DATA_PATH = os.path.join(SYSTEM_PATH, "data")
 
 BOARD_CONFIG_PATH = os.path.join(DATA_PATH, "board_config.json")
 CMDS_CONFIG_PATH = os.path.join(DATA_PATH, "commands.json")
+AI_OBJECTS_PATH = os.path.join(DATA_PATH, "ai_objects.json")
+SETTINGS_PATH = os.path.join(DATA_PATH, "settings.json")

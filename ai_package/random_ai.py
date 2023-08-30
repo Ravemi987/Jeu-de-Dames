@@ -11,4 +11,7 @@ de type : list[Move]
 """
 
 def random_ai(game: Game):
-    return game.valid_moves[random.randint(0, len(game.valid_moves)-1)]
+    return None, game.valid_moves[random.randint(0, len(game.valid_moves)-1)]
+
+
+MAIN_FUNC = random_ai

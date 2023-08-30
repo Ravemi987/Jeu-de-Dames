@@ -50,9 +50,3 @@ class Dragger:
         """ Désactive le dragger pour la pièce. """
         self.piece = None
         self.dragging = False
-
-    def reset(self):
-        self.piece: Piece = None
-        self.dragging = False
-        self.mouseX = 0
-        self.mouseY = 0

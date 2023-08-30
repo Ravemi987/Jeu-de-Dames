@@ -14,11 +14,9 @@ class Move:
         self.skipped_list = skipped_list
 
     def get_initial_pos(self):
-        """ Permet de récupérer la case de départ. """
         return self.initial_pos
     
     def get_final_pos(self):
-        """ Permet de récupérer la case de d'arrivée. """
         return self.final_pos
     
     def is_empty_skipped_list(self):
@@ -26,7 +24,6 @@ class Move:
         return len(self.skipped_list) == 0
 
     def get_skipped_list(self):
-        """ Permet de récupérer la liste des pièces capturées. """
         return self.skipped_list
     
     def get_piece(self):
@@ -34,7 +31,6 @@ class Move:
         return self.piece
     
     def get_player_turn(self):
-        """ Renvoi le joueur à qui c'est le tour. """
         return "player1" if self.turn == 'white' else "player2"
     
     def is_capture(self):
@@ -57,4 +53,4 @@ class Move:
         return False
 
     def __repr__(self):
-        return f"({self.initial_pos[0]}, {self.initial_pos[1]}, {self.final_pos[0]}, {self.final_pos[1]} : {self.skipped_list})"
+        return f"[{self.initial_pos}, {self.final_pos}]"

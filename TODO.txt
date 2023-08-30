@@ -8,4 +8,4 @@ Rendre possible l'utilisation de plusieurs IA.
 
 Simplifer le code.
 
-Cleint-Serveur
+Client-Serveur

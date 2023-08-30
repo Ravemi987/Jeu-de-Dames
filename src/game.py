@@ -23,27 +23,29 @@ class Game:
         - le dragger (dragger)
         - le tour du joueur qui commence (turn)
         - la liste des déplacements valides (valid_moves)
-
+        ...
     Gère l'affichage, les déplacements, la fin de partie avec les match nuls.
+
+    La méthode __init__() est le constructeur de la classe.
+    _init() est la méthode privée qui initialise les attributs indispensables.
+    init() est une méthode public qui est appelée si l'on a besoin d'un affichage.
+    C'est-à-dire qu'elle est inutile si l'on eest en train d'effectuer une copie du jeu pour simuler
+    des déplacements pour l'IA.
     """
     
     def __init__(self, game_config: Config, board_config, copy=False):
+        self.is_copy = copy
         self.board_config = board_config
         self._init(game_config, board_config)
         
         if not copy:
             self.init()
 
-    # Méthode privée
     def _init(self, game_config: Config, board_config):
         """ Initialise les attributs principaux. """
         self.game_config = game_config
         self.selected_piece: Piece = None
         self.hovered_square_pos = None
-        self.start_time = time.time()
-        self.player1_remaining_time = self.player2_remaining_time = self.game_config.game_duration
-        self.remaining_time = self.game_config.game_duration
-        self.elapsed_time = 0
 
         self._init_game_state()
         self.board = Board(board_config, self.player_side)
@@ -66,15 +68,18 @@ class Game:
 
     def _init_clocks(self):
         """ Initialise les horloges de jeu. """
+        self.start_time = time.time()
+        self.player1_remaining_time = self.player2_remaining_time = self.game_config.game_duration
+        self.remaining_time = self.game_config.game_duration
+        self.elapsed_time = 0
+
         self.clock1 = Clock(self.game_config, self.screen, 'white', self.game_config.game_duration, self.player_side)
         self.clock2 =  Clock(self.game_config, self.screen, 'black', self.game_config.game_duration, self.player_side)
 
     def _init_windows(self):
         """ Initialise les attributs graphiques. """
         self.screen = pygame.display.set_mode([self.game_config.window.screen_width, self.game_config.window.screen_height], pygame.SRCALPHA)
-        self.screen.set_alpha(self.game_config.transparency)
         self.board_window = pygame.Surface([self.game_config.window.board_width, self.game_config.window.board_height], pygame.SRCALPHA)
-        self.board_window.set_alpha(self.game_config.transparency)
 
     def _init_equivalence_classes(self):
         """ Initialise les piles qui sont les classes d'équivalence de la congruence modulo 4. """
@@ -90,7 +95,7 @@ class Game:
     def init(self):
         """" 
         Initialise la partie principale.
-        cette méthode n'est appelée que pour lancer la partie dans le main.
+        cette méthode n'est appelée que si nécessaire.
         Elle est là pour optimiser la créations des copies nécessaires pour l'IA.
         """
         self._init_windows()
@@ -100,6 +105,7 @@ class Game:
 
     @staticmethod
     def get_opposite_color(color):
+        """ Retourne la couleur de l'adversaire du joueur courant. """
         if color == 'white':
             return 'black'
         return 'white'
@@ -111,11 +117,9 @@ class Game:
         return self.player2_remaining_time
 
     def select_piece(self, piece):
-        """ Définit la pièce comme étant sélectionnée par le joueur. """
         self.selected_piece = piece
 
     def unselect_piece(self):
-        """ Définit la pièce comme n'étant plus sélectionnée par le joueur. """
         self.selected_piece = None
 
     def get_move(self, initial, final) -> Move:
@@ -134,7 +138,6 @@ class Game:
         self.game_config.change_theme()
     
     def change_resolution(self):
-        """ Modifie la résolution d'écran. """
         self.game_config.change_resolution()
         self._init_windows()
         
@@ -166,13 +169,9 @@ class Game:
         self.check_end_game()
 
         self.show_fps(self.screen, tick)
-        self.show_clock()
+        self.show_clocks()
 
         pygame.display.update()
-    
-    def reset(self, board_config=1):
-        """ Réinitialise la partie. """
-        self._init(self.game_config, board_config)
 
     def draw_squares(self, window, theme: Theme):
         """
@@ -187,15 +186,19 @@ class Game:
                 pygame.draw.rect(window, color, 
                                     (col*square_size, row*square_size, square_size, square_size))
 
+    def draw_piece(self, window, square_size, row, col):
+        piece = self.board.get_piece(row, col)
+        if piece != 0 and piece is not self.dragger.piece:
+            x, y = (square_size * piece.col + square_size // 2, 
+                        square_size * piece.row + square_size // 2)
+            piece.draw_piece(window, x, y, square_size)
+
     def draw_pieces(self, window):
+        """ Dessine les pièces du plateau. """
         square_size = self.game_config.window.square_size
         for row in range(ROWS):
             for col in range(COLS):
-                piece = self.board.get_piece(row, col)
-                if piece != 0 and piece is not self.dragger.piece:
-                    x, y = (square_size * piece.col + square_size // 2, 
-                                square_size * piece.row + square_size // 2)
-                    piece.draw_piece(window, x, y, square_size)
+                self.draw_piece(window, square_size, row, col)
 
     def draw_board(self, window, theme: Theme):
         """ 
@@ -214,36 +217,39 @@ class Game:
         Change le tour et calcul les déplacements valides
         du joueur auquel le tour vient de passer.
         """
-        if self.turn == 'white':
-            self.player1_remaining_time = self.remaining_time + self.game_config.increment
-            self.remaining_time = self.player2_remaining_time
-            self.turn = 'black'
-        else:
-            self.player2_remaining_time = self.remaining_time + self.game_config.increment
-            self.remaining_time = self.player1_remaining_time
-            self.turn = 'white'
+        if not self.is_copy:
+            if self.turn == 'white':
+                self.player1_remaining_time = self.remaining_time + self.game_config.increment
+                self.remaining_time = self.player2_remaining_time
+                self.turn = 'black'
+            else:
+                self.player2_remaining_time = self.remaining_time + self.game_config.increment
+                self.remaining_time = self.player1_remaining_time
+                self.turn = 'white'
 
-        self.start_time = time.time()
+            self.start_time = time.time()
         self.valid_moves = self.board.get_valid_moves(self.turn)
         self.selected_piece = None
 
     def apply_move(self, move: Move):
-        # On déplace la pièce selectionnée
+        """ 
+        Applique un déplacement. Cette méthode est indépendante
+        de l'interface graphique et également utilisée pour des simulations.
+        """
         self.board.move_piece(move)
-        # On récupère la liste des pièces capturées par ce déplacement.
-        skipped_pieces = move.get_skipped_list()
-        # Si le déplacement n'est pas libre, on supprime toutes ces pièces du plateau
         self.moves_played.append(move)
+
+        skipped_pieces = move.get_skipped_list()
         if len(skipped_pieces) > 0:
             self.board.remove_pieces(skipped_pieces)
         self.change_turn()
-        # On met à jour la clé de hachage
+
         self.hash_key.update(move, self.turn)
         self.hash_list.append(self.hash_key.get_value())
-        # On vérifie l'état de la partie
+
         self.update_game_state()
 
-    def human_move(self, row, col):
+    def check_human_move(self, row, col):
         """ 
         Déplace une pièce sur le plateau (en prenant en compte les règles).
         Comme on essaye de déplacer une pièce seulement si elle a pu être selectionnée,
@@ -280,6 +286,20 @@ class Game:
                 color = theme.dark_hover_color
             self.show_rect(window, color, row, col, width=5)
 
+    def _highlight_skipped_pieces(self, skipped_pieces, window, color, width):
+            for (row, col) in skipped_pieces:
+                self.show_rect(window, color, row, col, width)
+
+    def _draw_final_pos(self, selected_coords, square_size, window, color, radius):
+        for move in self.valid_moves:
+            if move.get_initial_pos() == selected_coords:
+                final_pos = move.get_final_pos()
+                center = (square_size * final_pos[1] + square_size // 2, 
+                            square_size * final_pos[0] + square_size // 2)
+                pygame.draw.circle(window, color, center, radius)
+                skipped_pieces = move.get_skipped_list()
+                self._highlight_skipped_pieces(skipped_pieces, window, color, 100)
+
     def show_valid_moves(self, window, theme: Theme):
         """ 
         Ajoute des effets visuels permettant de discerner
@@ -291,15 +311,7 @@ class Game:
             color = theme.valid_moves_color
             radius = square_size // 2 - self.game_config.window.padding
             
-            for move in self.valid_moves:
-                if move.get_initial_pos() == selected_coords:
-                    final_pos = move.get_final_pos()
-                    center = (square_size * final_pos[1] + square_size // 2, 
-                                square_size * final_pos[0] + square_size // 2)
-                    pygame.draw.circle(window, color, center, radius)
-                    skipped_pieces = move.get_skipped_list()
-                    for (row, col) in skipped_pieces:
-                        self.show_rect(window, color, row, col, width=100)
+            self._draw_final_pos(selected_coords, square_size, window, color, radius)
 
     def show_last_move(self, window, theme: Theme):
         """ 
@@ -311,7 +323,6 @@ class Game:
                 self.show_rect(window, theme.selected_piece_color, pos[0], pos[1], width=100)
 
     def show_fps(self, window, framerate):
-        """ Affiche le framerate. """
         max_fps = self.game_config.get_fps()
         if framerate > 0.9 * max_fps:
             color = (81, 194, 47)
@@ -320,7 +331,6 @@ class Game:
         else:
             color = (224, 73, 18)
         text = self.game_config.digital_font.render(str(framerate).split('.')[0], True, color)
-        text.set_alpha(self.game_config.transparency)
         window.blit(text, [10, 0])
 
     @staticmethod
@@ -331,8 +341,7 @@ class Game:
         opponent_clock.set_remaining_time(opponent_rmng_time)
         opponent_clock.pause()
 
-    def show_clock(self):
-        """ Affiche les horloges. """
+    def show_clocks(self):
         if self.has_start:
             if self.turn == 'white':
                 self.update_clocks(
@@ -346,7 +355,6 @@ class Game:
         self.clock2.update()
 
     def show_end_screen(self, text: str):
-        """ Affiche l'écran de fin. """
         board_origin = self.game_config.get_board_pos()
 
         end_screen_width, end_screen_height = self.game_config.window.board_width // 2,  self.game_config.window.board_height // 3
@@ -389,10 +397,10 @@ class Game:
 
     def get_winner(self):
         """ Renvoi le gagnant de la partie. """
-        if self.board.get_pieces_count('white') == 0 and self.board.get_pieces_count('black') > 0 \
+        if self.board.get_number_of_pieces('white') == 0 and self.board.get_number_of_pieces('black') > 0 \
                 or len(self.valid_moves) == 0 and self.turn == 'white':
             self.winner = 'noir'
-        elif self.board.get_pieces_count('black') == 0 and self.board.get_pieces_count('white') > 0 \
+        elif self.board.get_number_of_pieces('black') == 0 and self.board.get_number_of_pieces('white') > 0 \
                 or len(self.valid_moves) == 0 and self.turn == 'black':
             self.winner = 'blanc'
 
@@ -429,12 +437,10 @@ class Game:
         Si, durant 25 coups, il n'y a ni déplacement de pion ni prise, 
         la fin de partie est considérée comme égale.
         """
-        count = 0
-        for move in reversed(self.moves_played):
-            if move.is_pawn_move() or move.is_capture():
-                break
-            count += 1
-            if count >= 25:
+        move = self.moves_played[-1]
+        if not(move.is_pawn_move() or move.is_capture()):
+            self.no_move_repetition_counter += 1
+            if self.no_move_repetition_counter >= 25:
                 return True
         return False
 
@@ -444,10 +450,10 @@ class Game:
         la fin de partie sera considérée comme égale lorsque les deux joueurs auront encore joué
         chacun 16 coups au maximum.
         """
-        if self.board.get_total_pieces_count() == 4:
+        if self.board.get_total_number_of_pieces() == 4:
             player1, player2 = 'white', 'black'
-            player1_pieces = (self.board.get_pawns_count(player1), self.board.get_queens_count(player1))
-            player2_pieces = (self.board.get_pawns_count(player2), self.board.get_queens_count(player2))
+            player1_pieces = (self.board.get_number_of_pawns(player1), self.board.get_number_of_queens(player1))
+            player2_pieces = (self.board.get_number_of_pawns(player2), self.board.get_number_of_queens(player2))
             cond1 = player1_pieces == (0, 3) and player2_pieces == (0, 1) \
                         or player1_pieces == (0, 1) and player2_pieces == (0, 3)
             cond2 = player1_pieces == (1, 2) and player2_pieces == (0, 1) \
@@ -467,10 +473,10 @@ class Game:
         la fin de partie de deux dames contre une dame, et a fortiori, de une dame contre une dame, 
         sera considérée égale.
         """
-        if self.board.get_total_pieces_count() <= 3:
+        if self.board.get_total_number_of_pieces() <= 3:
             player1, player2 = 'white', 'black'
-            player1_pieces = (self.board.get_pawns_count(player1), self.board.get_queens_count(player1))
-            player2_pieces = (self.board.get_pawns_count(player2), self.board.get_queens_count(player2))
+            player1_pieces = (self.board.get_number_of_pawns(player1), self.board.get_number_of_queens(player1))
+            player2_pieces = (self.board.get_number_of_pawns(player2), self.board.get_number_of_queens(player2))
             cond1 = player1_pieces == (0, 2) and player2_pieces == (0, 1) \
                         or player1_pieces == (0, 1) and player2_pieces == (0, 2)
             cond2 = player1_pieces == player2_pieces == (0, 1)
@@ -495,6 +501,7 @@ class Game:
         """ Met à jour l'état de la partie. """
         self.get_winner()
         self.draw = self.check_draw()
+        self.is_finished = self.winner is not None or self.draw
     
     def check_end_game(self):
         """ Vérifie si la partie est terminée. Si oui, affiche l'écran de fin. """
@@ -510,11 +517,26 @@ class Game:
             self.show_end_screen(f"Egalité par \n{self.draw} !")
             return True
         return False
+    
+    def start(self):
+        self.has_start = True
+        self.start_time = time.time()
 
     def quit_game(self):
         """ Permet de quitter le jeu. """
         pygame.quit()
         sys.exit()
+
+    def reset(self, board_config=1):
+        """ Réinitialise la partie. """
+        self.__init__(self.game_config, board_config)
+
+    def add_time(self, duration, player):
+        """ Ajoute du temps à l'horloge de l'un des joueurs. """
+        if player == 1:
+            self.player1_remaining_time += duration
+        else:
+            self.player2_remaining_time += duration
 
     def copy(self):
         """ Copie une instance de la classe Game. """

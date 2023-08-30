@@ -3,6 +3,10 @@ from .theme import Theme
 from .screen import Screen
 from .button import Button
 from .constants import *
+import pickle
+import json
+import os
+
 
 class Config:
     """
@@ -11,7 +15,6 @@ class Config:
         - Les dimensions de la fenêtre de jeu,
         - les polices d'écritures
         - les fps
-        - l'opacité
         - la clock (durée maximum et bonus de temps)
     """
     
@@ -20,17 +23,28 @@ class Config:
         self.themes, self.windows = [], []
         self.buttons_list = []
         self.board_pos = (0, 0)
-        self.fps = 120
-        self.transparency = 255
-        self.game_duration = 300
-        self.increment = 5
-        self.gamemode = "self.player_vs_ai"
-        self.ai_color = 'black'
 
+        # Si la configuration est une copie, alors c'est une simulation.
+        # Pas besoin d'interface graphique
         if not copy:
-            self.init()
+            self.init_settings()
+            self.init_GUI()
+            self.dump_ai_objects()
 
-    def init(self):
+    def init_settings(self):
+        """ Initialise les attributs liés au jeu à partir du fichier settings. """
+        with open(SETTINGS_PATH, "r", encoding='UTF-8') as f:
+            settings: dict = json.load(f)
+
+        settings_keys: list[str] = list(settings.keys())
+        for setting_key in settings_keys:
+            setattr(self, setting_key, settings[setting_key])
+
+    def init_GUI(self):
+        """ 
+        Méthode publique appelée uniquement si la configuration 
+        nécessite un affichage graphique.
+        """
         self._add_themes()
         self._add_windows()
         self.theme_index, self.window_index = 0, 0
@@ -39,18 +53,37 @@ class Config:
         pygame.font.init()
         self.set_font()
 
+    def dump_ai_objects(self):
+        """ 
+        Initialise des objets de la classe IA
+        et les intègrent au fichier de configuration.
+        """
+        from ai_package.ai import AI
+
+        ai_dict = {}
+
+        for file_name in os.listdir(AI_PACKAGE_PATH):
+            if file_name not in ['__pycache__', '__init__.py', 'ai.py', 'args.json']:
+                module_name = os.path.splitext(file_name)[0]
+                module = __import__(f'ai_package.{module_name}', fromlist=[''])
+
+                for color in ['white', 'black']:
+                    ai_dict[f'{module_name}_{color}'] = str(pickle.dumps(AI(module_name, module.MAIN_FUNC, color)))
+            
+        with open(AI_OBJECTS_PATH, "w", encoding='UTF-8') as f:
+            json.dump(ai_dict, f, indent=4, ensure_ascii=False)
+
     def set_font(self):
+        """ Récupère les polices de caractères. """
         self.digital_font = pygame.font.Font("assets/digital-7.regular.ttf", self.window.digital_font_size)
         self.text_font = pygame.font.Font("assets/recharge.rg-bold.otf", self.window.text_font_size)
 
     def change_theme(self):
-        """ Change le thème. """
         self.theme_index += 1
         self.theme_index %= len(self.themes)
         self.theme = self.themes[self.theme_index]
 
     def change_resolution(self):
-        """ Change la résolution d'écran. """
         self.window_index += 1
         self.window_index %= len(self.windows)
         self.window = self.windows[self.window_index]
@@ -70,7 +103,7 @@ class Config:
         gray = Theme((220, 220, 220), (171, 171, 171), (167, 177, 183), (154, 154, 154), (224, 228, 230), (243, 243, 243), (226, 226, 226))
         black = Theme((242, 235, 228), (89, 87, 84), (171, 165, 155), (56, 55, 53), (194, 187, 176), (250, 248, 245), (77, 75, 72))
 
-        self.themes = [orange, green, brown, blue, gray, black]
+        self.themes = [green, brown, blue, gray, black, orange]
 
     def _add_windows(self):
         """ Ajoute une résolution d'écran. """
@@ -83,36 +116,19 @@ class Config:
 
         self.windows = [windowed, fullscreen]
 
+    def get_fps(self):
+        return self.fps
+
     def get_board_pos(self):
-        """ Renvoi la position du plateau. """
         return self.board_pos
 
     def set_board_pos(self, pos):
-        """ Place le plateau sur la fenêtre de jeu. """
         self.board_pos = pos
 
-    def get_fps(self):
-        """ Renvoi le framerate. """
-        return self.fps
-
-    def set_fps(self, fps):
-        """ Met à jour le framerate. """
-        self.fps = fps
-
-    def get_transparency(self):
-        """ Renvoi la valeur de l'opacité. """
-        return self.transparency
-    
-    def set_tansparency(self, transparency):
-        """ Met à jour l'opacité. """
-        self.transparency = transparency
-
     def add_button(self, button):
-        """ Ajoute un bouton. """
         self.buttons_list.append(button)
 
     def get_buttons_list(self) -> list[Button]:
-        """ Renvoie la liste des boutons. """
         return self.buttons_list
 
     def set_game_duration(self, duration=600):
@@ -120,5 +136,5 @@ class Config:
         self.game_duration = duration
 
     def set_time_increment(self, time=2):
-        """ Modifie le temp rajouté à chaque joueur au début de sont tour. """
+        """ Modifie le temp rajouté à chaque joueur au début de son tour. """
         self.increment = time

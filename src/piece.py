@@ -5,8 +5,8 @@ class Piece:
     Une pièce est représentée par sa position (row, col) dans la matrice (le plateau),
     une couleur (1 pour les blancs et 2 pour les noirs),
     un attribut 'name' qui permet de savoir si la pièce est une dame,
-    une liste des déplacements valides de la pièces,
-    une position sur l'écran (x, y.)
+    un attribut side: selon si les blancs sont en haut ou en bas, la ligne pour aller en dame
+        n'est pas la même
     """
     
     def __init__(self, row, col, color, name='pawn', side="bottom", copy=False):
@@ -28,11 +28,9 @@ class Piece:
         self.sprite = pygame.image.load(f'assets/{self.color}_{self.name}.png')
 
     def is_queen(self):
-        """ Vérifie si une pièce est une dame. """
         return self.name == 'queen'
     
     def is_pawn(self):
-        """ Vérifie si une pièce est un pion. """
         return self.name == 'pawn'
 
     def make_queen(self):

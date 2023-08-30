@@ -1,0 +1,5 @@
+{
+    "random_ai": "()",
+    "minimax": "(3,)",
+    "alphabeta":  "(6, float('-inf'), float('+inf'), True)"
+}

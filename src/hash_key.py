@@ -6,9 +6,8 @@ from .hash_values import *
 
 class HashKey:
     """
-    Génère et actualise une clé de hachage
-    unique à chaque position et qui permet de détecter les match nuls
-    en ne parcourant le plateau qu'une seule fois.
+    Génère et actualise une clé de hachage unique à chaque position 
+    et qui permet de détecter les match nuls en ne parcourant le plateau qu'une seule fois.
     """
     
     def __init__(self, starting_board: Board, turn, white_side):
