@@ -3,27 +3,27 @@ from .ai import AI
 import time
 
 
-MAX_TIME = 2000
+MAX_TIME = 5 # arrêt en largeur
 nodes = 0
 
 
-def evaluate(game: Game, color='black'):
+def evaluate(game: Game, color):
     opposite_color = game.get_opposite_color(color)
     return game.board.get_number_of_pawns(color) - game.board.get_number_of_pawns(opposite_color) \
         + game.board.get_number_of_queens(color) * 3 - game.board.get_number_of_queens(opposite_color) * 3
 
 
-def MiniMax_Max(game: Game, depth):
+def MiniMax_Max(game: Game, color, depth):
     global nodes
     nodes += 1
     start_time = time.time()
 
     if depth < 1 or game.is_finished:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
 
     valid_moves = game.valid_moves
     if len(valid_moves) == 0:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
 
     best_score = float('-inf')
     best_move = None
@@ -31,7 +31,7 @@ def MiniMax_Max(game: Game, depth):
 
     for move in valid_moves:
         new_game = AI.simulate_move(move, game)
-        score, *_ = MiniMax_Min(new_game, depth)
+        score, *_ = MiniMax_Min(new_game, color, depth)
         if score > best_score:
             best_score = score
             best_move = move
@@ -42,15 +42,15 @@ def MiniMax_Max(game: Game, depth):
     return best_score, best_move, depth, nodes
 
 
-def MiniMax_Min(game: Game, depth):
+def MiniMax_Min(game: Game, color, depth):
     start_time = time.time()
 
     if depth < 1 or game.is_finished:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
 
     valid_moves = game.valid_moves
     if len(valid_moves) == 0:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
         
     best_score = float('inf')
     best_move = None
@@ -58,7 +58,7 @@ def MiniMax_Min(game: Game, depth):
 
     for move in valid_moves:
         new_game = AI.simulate_move(move, game)
-        score, *_ = MiniMax_Max(new_game, depth)
+        score, *_ = MiniMax_Max(new_game, color, depth)
         if score < best_score:
             best_score = score
             best_move = move

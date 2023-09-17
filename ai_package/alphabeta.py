@@ -3,27 +3,27 @@ from .ai import AI
 import time
 
 
-MAX_TIME = 0.3
+MAX_TIME = 5 # arrêt en largeur
 nodes = 0
 
 
-def evaluate(game: Game, color='white'):
+def evaluate(game: Game, color):
     opposite_color = game.get_opposite_color(color)
     return game.board.get_number_of_pawns(color) - game.board.get_number_of_pawns(opposite_color) \
         + game.board.get_number_of_queens(color) * 3 - game.board.get_number_of_queens(opposite_color) * 3
 
 
-def AlphaBeta(game: Game, depth, alpha, beta, is_max):
+def AlphaBeta(game: Game, color, depth, alpha, beta, is_max):
     global nodes
     nodes += 1
     start_time = time.time()
-
+    
     if depth < 1 or game.is_finished:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
 
     valid_moves = game.valid_moves
     if len(valid_moves) == 0:
-        return evaluate(game), game, depth, nodes
+        return evaluate(game, color), game, depth, nodes
 
     if is_max:
         best_score = float('-inf')
@@ -32,7 +32,7 @@ def AlphaBeta(game: Game, depth, alpha, beta, is_max):
 
         for move in valid_moves:
             new_game = AI.simulate_move(move, game)
-            score, *_ = AlphaBeta(new_game, depth, alpha, beta, False)
+            score, *_ = AlphaBeta(new_game, color, depth, alpha, beta, False)
             if score > best_score:
                 best_score = score
                 best_move = move
@@ -51,7 +51,7 @@ def AlphaBeta(game: Game, depth, alpha, beta, is_max):
 
         for move in valid_moves:
             new_game = AI.simulate_move(move, game)
-            score, *_ = AlphaBeta(new_game, depth, alpha, beta, True)
+            score, *_ = AlphaBeta(new_game, color, depth, alpha, beta, True)
             if score < best_score:
                 best_score = score
                 best_move = move

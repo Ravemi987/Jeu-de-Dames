@@ -44,10 +44,10 @@ class AI:
     def choose_move(self, game: Game, addr):
         """ Renvoie le déplacement choisi par l'IA. """
         start_time = time.time()
-        score, move, depth, nodes = self.engine(game, *self.args)
+        score, move, depth, nodes = self.engine(game, self.color, *self.args)
         search_time = time.time() - start_time
 
-        print(f"{addr}: {move} found in {round(search_time, 3)} with depth of {depth} and score of {score} exploring {nodes} nodes.")
+        print(f"{addr}: {move} found in {round(search_time, 3)}s with depth of {depth+1} and score of {score} exploring {nodes} nodes.")
         #time.sleep(0.8 - search_time)
 
         return move

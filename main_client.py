@@ -20,7 +20,7 @@ from communication.client import Client
 
 if SYSTEM == "Windows":
     # Définir l'ID de l'application (AppUserModelID)
-    myappid = u'ravemi_987.jeux.jeu_de_dames.5'  # Chaîne arbitraire
+    myappid = u'ravemi_987.jeux.jeu_de_dames.5'
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     # Obtenir l'ID de l'application

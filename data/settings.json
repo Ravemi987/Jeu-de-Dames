@@ -3,9 +3,9 @@
     "fps": 120,
     "game_duration": 300,
     "increment": 5,
-    "gamemode": "self.ai_vs_ai",
-    "ai_1_engine": "alphabeta",
-    "ai_1_color": "white",
-    "ai_2_engine": "minimax",
-    "ai_2_color": "black"
+    "gamemode": "self.player_vs_ai",
+    "ai_1_engine": "minimax",
+    "ai_1_color": "black",
+    "ai_2_engine": "alphabeta",
+    "ai_2_color": "white"
 }
