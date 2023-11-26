@@ -42,6 +42,7 @@ class Client:
 
     def send(self, data: object):
         """ Envoi des données au serveur. """
+        data_output = None
         try:
             data_output = pickle.dumps(data) # sérialisation
         except OSError as err:
@@ -74,8 +75,8 @@ class Client:
                 if data_input:
                     self.data_queue.put(data_input) # On met les données dans la file
         except OSError:
-           print("Server has been closed.")
-           self.close()
+            print("Server has been closed.")
+            self.close()
 
     def send_ai(self, ai_list: list[AI], ai_switch: bool):
         """ 

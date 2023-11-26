@@ -18,12 +18,13 @@ class Board:
         self.board = [[0 for _ in range(COLS)] for _ in range(ROWS)]
         self.config = config
         self.last_move = None
+        self._init_pieces_dictionary()
 
     def init(self):
         """ Initialise la matrice du plateau et le dictionnaire des pièces. """
         self._init_board(self.config, self.player_side)
-        self._init_pieces_dictionary()
-
+        self.update_pieces_count()
+        
     def _init_pieces_dictionary(self):
         """ Initialise le dictionnaire contenant le nombre de pions et de dames pour chaque joueur."""
         self.pieces_dict = {
@@ -36,7 +37,6 @@ class Board:
                 'queen': 0
             }
         }
-        self.update_pieces_count()
 
     def update_pieces_count(self):
         """ Met à jour le dictionnaire contenant le nombre de pions et de dames pour chaque joueur. """

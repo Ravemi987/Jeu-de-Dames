@@ -136,6 +136,7 @@ class Server:
         self.current_ai = self.ai_list[self.ai_index]
 
     def recv_ai(self, conn: socket.socket, addr):
+        data_input = None
         recv_header = conn.recv(HEADER_SIZE).decode(FORMAT) # reception du header
         if not recv_header:
             conn.close()

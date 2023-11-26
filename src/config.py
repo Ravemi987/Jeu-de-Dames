@@ -116,21 +116,6 @@ class Config:
 
         self.windows = [windowed, fullscreen]
 
-    def get_fps(self):
-        return self.fps
-
-    def get_board_pos(self):
-        return self.board_pos
-
-    def set_board_pos(self, pos):
-        self.board_pos = pos
-
-    def add_button(self, button):
-        self.buttons_list.append(button)
-
-    def get_buttons_list(self) -> list[Button]:
-        return self.buttons_list
-
     def set_game_duration(self, duration=600):
         """ Met à jour la durée de l'horloge. """
         self.game_duration = duration
@@ -138,3 +123,18 @@ class Config:
     def set_time_increment(self, time=2):
         """ Modifie le temp rajouté à chaque joueur au début de son tour. """
         self.increment = time
+
+    def get_buttons_list(self) -> list[Button]:
+        return self.buttons_list
+    
+    def add_button(self, button):
+        self.buttons_list.append(button)
+
+    def set_board_pos(self, pos):
+        self.board_pos = pos
+
+    def get_board_pos(self):
+        return self.board_pos
+    
+    def get_fps(self):
+        return self.fps
